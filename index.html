@@ -1,0 +1,1725 @@
+<title>Carteira de Clientes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #eef2f9;
+    --surface: #ffffff;
+    --surface-2: #f6f8fc;
+    --ink: #131d2e;
+    --ink-muted: #566a8c;
+    --sand: #dbe3f0;
+    --sand-strong: #c1cee4;
+    --teal: #2b5ea8;
+    --teal-strong: #163f7a;
+    --teal-soft: #e3ecfa;
+    --series-2: #eb6834;
+    --series-2-strong: #a8481f;
+    --series-2-soft: #fbe6db;
+    --success: #2f7a52;
+    --success-soft: #e2f2e8;
+    --warning: #a8722a;
+    --warning-soft: #f5ead9;
+    --danger: #b5453a;
+    --danger-soft: #f6e4e1;
+    --shadow: 0 1px 2px rgba(19,29,46,0.07), 0 6px 20px -8px rgba(19,29,46,0.2);
+    --radius: 10px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0c1220;
+      --surface: #141d30;
+      --surface-2: #182238;
+      --ink: #e8edf8;
+      --ink-muted: #93a3c2;
+      --sand: #24304a;
+      --sand-strong: #344361;
+      --teal: #6ea3f0;
+      --teal-strong: #9cc2f7;
+      --teal-soft: rgba(110,163,240,0.16);
+      --series-2: #d95926;
+      --series-2-strong: #f5a173;
+      --series-2-soft: rgba(217,89,38,0.16);
+      --success: #74c18f;
+      --success-soft: rgba(116,193,143,0.15);
+      --warning: #dba85a;
+      --warning-soft: rgba(219,168,90,0.15);
+      --danger: #e2897c;
+      --danger-soft: rgba(226,137,124,0.15);
+      --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 6px 24px -8px rgba(0,0,0,0.55);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0c1220;
+    --surface: #141d30;
+    --surface-2: #182238;
+    --ink: #e8edf8;
+    --ink-muted: #93a3c2;
+    --sand: #24304a;
+    --sand-strong: #344361;
+    --teal: #6ea3f0;
+    --teal-strong: #9cc2f7;
+    --teal-soft: rgba(110,163,240,0.16);
+    --series-2: #d95926;
+    --series-2-strong: #f5a173;
+    --series-2-soft: rgba(217,89,38,0.16);
+    --success: #74c18f;
+    --success-soft: rgba(116,193,143,0.15);
+    --warning: #dba85a;
+    --warning-soft: rgba(219,168,90,0.15);
+    --danger: #e2897c;
+    --danger-soft: rgba(226,137,124,0.15);
+    --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 6px 24px -8px rgba(0,0,0,0.55);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14.5px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .display {
+    font-family: "Fraunces", Georgia, "Times New Roman", serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  .mono, .num { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace; font-variant-numeric: tabular-nums; }
+  a { color: var(--teal); }
+  button { font-family: inherit; }
+  ::selection { background: var(--teal-soft); }
+
+  :focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  #app { display: flex; min-height: 100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: 236px;
+    flex: none;
+    background: var(--surface);
+    border-right: 1px solid var(--sand);
+    padding: 22px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 6px;
+  }
+  .brand-mark {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: var(--teal);
+    color: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 16px;
+    flex: none;
+  }
+  .brand-name {
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 17px;
+    line-height: 1.15;
+  }
+  .brand-sub { font-size: 11px; color: var(--ink-muted); }
+
+  nav.primary-nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    color: var(--ink-muted);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    text-align: left;
+    width: 100%;
+  }
+  .nav-link:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-link.active { background: var(--teal-soft); color: var(--teal-strong); }
+  .nav-link .ic { width: 17px; text-align: center; flex: none; opacity: 0.9; }
+  .nav-link .count {
+    margin-left: auto;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-muted);
+  }
+  .nav-link.active .count { color: var(--teal-strong); }
+
+  .sidebar-foot { margin-top: auto; font-size: 11px; color: var(--ink-muted); padding: 0 6px; display: flex; flex-direction: column; gap: 8px; }
+  .sidebar-foot .btn-ghost { color: var(--ink-muted); font-size: 12px; }
+
+  .global-search { position: relative; padding: 0 2px; }
+  .global-search .input { font-size: 13px; padding: 7px 10px; }
+  .search-results {
+    position: absolute; top: calc(100% + 6px); left: 2px; right: 2px;
+    background: var(--surface); border: 1px solid var(--sand); border-radius: 10px;
+    box-shadow: var(--shadow); max-height: 360px; overflow-y: auto; z-index: 60; padding: 5px;
+  }
+  .search-results .sr-item {
+    display: flex; gap: 9px; align-items: flex-start; padding: 7px 8px; border-radius: 7px;
+    cursor: pointer; text-align: left; width: 100%; border: none; background: none; font-family: inherit;
+  }
+  .search-results .sr-item:hover { background: var(--surface-2); }
+  .search-results .sr-item .sr-title { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+  .search-results .sr-item .sr-sub { font-size: 11.5px; color: var(--ink-muted); }
+  .search-results .sr-empty { padding: 14px 8px; font-size: 12.5px; color: var(--ink-muted); text-align: center; }
+  .sr-ic {
+    width: 24px; height: 24px; border-radius: 6px; flex: none; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; margin-top: 1px;
+  }
+  .sr-ic.client { background: var(--sand); color: var(--ink-muted); }
+  .sr-ic.order { background: var(--teal-soft); color: var(--teal-strong); }
+  .sr-ic.quote { background: var(--warning-soft); color: var(--warning); }
+  .sr-ic.visit { background: var(--success-soft); color: var(--success); }
+
+  th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortable:hover { color: var(--ink); }
+  th.sortable.sorted { color: var(--teal-strong); }
+  #save-indicator { display: flex; align-items: center; gap: 6px; }
+  #save-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sand-strong); flex: none; }
+  #save-indicator.saving .dot { background: var(--warning); }
+  #save-indicator.saved .dot { background: var(--success); }
+  #save-indicator.error .dot { background: var(--danger); }
+
+  /* ---------- Main content ---------- */
+  main.content { flex: 1; min-width: 0; padding: 28px 34px 60px; max-width: 1180px; }
+  .page-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .page-head h1 { font-size: 25px; }
+  .page-head .sub { color: var(--ink-muted); font-size: 13px; margin-top: 4px; }
+  .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--sand);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .12s ease, border-color .12s ease;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface-2); border-color: var(--sand-strong); }
+  .btn-primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .btn-primary:hover { background: var(--teal-strong); border-color: var(--teal-strong); }
+  .btn-danger { color: var(--danger); }
+  .btn-ghost { border-color: transparent; background: none; padding: 8px 10px; }
+  .btn-ghost:hover { background: var(--surface-2); }
+  .btn-sm { padding: 5px 10px; font-size: 12.5px; border-radius: 7px; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* Stat cards */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 26px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--sand); border-radius: var(--radius);
+    padding: 16px 18px; box-shadow: var(--shadow);
+  }
+  .stat-card .label { font-size: 12px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-card .value { font-family: "Fraunces", serif; font-size: 28px; font-weight: 600; margin-top: 6px; }
+  .stat-card .value.small { font-size: 22px; }
+  .stat-card .hint { font-size: 12px; color: var(--ink-muted); margin-top: 3px; }
+
+  /* Charts */
+  .chart-row { display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 18px; }
+  .chart-card {
+    flex: 1 1 340px; background: var(--surface); border: 1px solid var(--sand); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px 18px 12px;
+  }
+  .chart-card .chart-title { font-size: 14px; font-weight: 600; }
+  .chart-card .chart-sub { font-size: 12px; color: var(--ink-muted); margin-top: 2px; margin-bottom: 10px; }
+  .chart-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  .chart-legend .lg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-muted); }
+  .chart-legend .lg-swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+  .chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .chart-svg .grid-line { stroke: var(--sand); stroke-width: 1; }
+  .chart-svg .axis-label { fill: var(--ink-muted); font-size: 9.5px; font-family: "Public Sans", sans-serif; }
+  .chart-svg .cat-label { fill: var(--ink-muted); font-size: 10px; font-family: "Public Sans", sans-serif; }
+  .chart-svg .val-label { fill: var(--ink); font-size: 10.5px; font-weight: 600; font-family: "IBM Plex Mono", monospace; }
+  .chart-svg .bar { transition: opacity 0.12s ease; cursor: default; }
+  .chart-svg .bar:hover, .chart-svg .bar:focus { opacity: 0.78; outline: none; }
+  .chart-svg .bar:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+  .chart-empty-note { font-size: 12.5px; color: var(--ink-muted); padding: 20px 0; text-align: center; }
+  .chart-tooltip {
+    position: fixed; z-index: 60; pointer-events: none; background: var(--ink); color: var(--paper);
+    font-size: 12px; padding: 7px 10px; border-radius: 7px; box-shadow: var(--shadow);
+    max-width: 220px; opacity: 0; transform: translate(-50%, -100%); transition: opacity 0.08s ease;
+  }
+  .chart-tooltip.show { opacity: 1; }
+  .chart-tooltip .tt-val { font-family: "IBM Plex Mono", monospace; font-weight: 600; }
+  .chart-tooltip .tt-sub { color: var(--sand-strong); font-size: 11px; margin-top: 1px; }
+
+  /* Login gate */
+  .login-gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--paper); }
+  .login-card {
+    width: 100%; max-width: 340px; background: var(--surface); border: 1px solid var(--sand); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 32px 28px; text-align: center;
+  }
+  .login-card .brand-mark { width: 44px; height: 44px; border-radius: 12px; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; font-family: "Fraunces", serif; font-weight: 600; font-size: 20px; }
+  .login-card h1 { font-size: 19px; margin-bottom: 4px; }
+  .login-card .sub { font-size: 13px; color: var(--ink-muted); margin-bottom: 18px; }
+  .login-card .input { margin-bottom: 12px; text-align: center; }
+  .login-card .btn { width: 100%; }
+  .login-error { background: var(--danger-soft); color: var(--danger); font-size: 12.5px; padding: 8px 10px; border-radius: 8px; margin-bottom: 12px; }
+
+  .panel { background: var(--surface); border: 1px solid var(--sand); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .panel + .panel { margin-top: 18px; }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 18px; border-bottom: 1px solid var(--sand);
+  }
+  .panel-head h2 { font-size: 16px; }
+  .panel-head .sub { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+  .panel-body { padding: 6px 0; }
+  .panel-body.pad { padding: 16px 18px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th {
+    text-align: left; font-weight: 600; font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--ink-muted); padding: 8px 18px; border-bottom: 1px solid var(--sand);
+  }
+  tbody td { padding: 11px 18px; border-bottom: 1px solid var(--sand); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.clickable { cursor: pointer; }
+  tbody tr.clickable:hover { background: var(--surface-2); }
+  .table-wrap { overflow-x: auto; }
+  td.num, th.num { text-align: right; }
+  .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+
+  .empty-state { padding: 46px 20px; text-align: center; color: var(--ink-muted); }
+  .empty-state .ic { font-size: 26px; margin-bottom: 10px; opacity: 0.6; }
+  .empty-state .btn { margin-top: 14px; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip-neutral { background: var(--sand); color: var(--ink-muted); }
+  .chip-teal { background: var(--teal-soft); color: var(--teal-strong); }
+  .chip-success { background: var(--success-soft); color: var(--success); }
+  .chip-warning { background: var(--warning-soft); color: var(--warning); }
+  .chip-danger { background: var(--danger-soft); color: var(--danger); }
+
+  /* Voltas */
+  .volta-row { padding: 14px 18px; border-bottom: 1px solid var(--sand); }
+  .volta-row:last-child { border-bottom: none; }
+  .volta-row-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 9px; }
+  .volta-name { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .volta-count { font-size: 11px; font-weight: 500; color: var(--ink-muted); background: var(--sand); padding: 2px 8px; border-radius: 99px; }
+  .volta-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .volta-freq-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-muted); white-space: nowrap; }
+  .volta-freq-input { width: 56px; padding: 4px 6px; text-align: center; }
+  .volta-clients { display: flex; flex-wrap: wrap; gap: 6px; }
+  .volta-client-chip {
+    font-size: 12px; padding: 4px 10px; border-radius: 99px; background: var(--surface-2);
+    border: 1px solid var(--sand); color: var(--ink); text-decoration: none;
+  }
+  .volta-client-chip:hover { border-color: var(--teal); color: var(--teal-strong); }
+
+  .search-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .input, select.input, textarea.input {
+    font-family: inherit; font-size: 13.5px; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--sand); border-radius: 8px;
+    padding: 8px 11px; width: 100%;
+  }
+  .input:focus { border-color: var(--teal); }
+  .search-input { max-width: 280px; }
+  select.filter-input { max-width: 190px; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .field label { font-size: 12px; font-weight: 600; color: var(--ink-muted); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field textarea { resize: vertical; min-height: 64px; }
+  .req { color: var(--danger); }
+
+  /* Client detail header */
+  .client-hero {
+    display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .client-id-block { display: flex; gap: 14px; align-items: flex-start; }
+  .client-avatar {
+    width: 52px; height: 52px; border-radius: 12px; background: var(--teal-soft); color: var(--teal-strong);
+    display: flex; align-items: center; justify-content: center; font-family: "Fraunces", serif;
+    font-size: 20px; font-weight: 600; flex: none;
+  }
+  .client-meta-list { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: 13px; color: var(--ink-muted); }
+  .client-meta-list span { display: inline-flex; align-items: center; gap: 5px; }
+  .client-notes { margin-top: 10px; font-size: 13px; color: var(--ink-muted); max-width: 60ch; }
+
+  .subnav { display: flex; gap: 4px; border-bottom: 1px solid var(--sand); margin-bottom: 18px; }
+  .subnav button {
+    border: none; background: none; padding: 9px 4px; margin-right: 18px; font-size: 13.5px; font-weight: 500;
+    color: var(--ink-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .subnav button.active { color: var(--teal-strong); border-bottom-color: var(--teal); }
+
+  .timeline { padding: 4px 18px 18px; }
+  .tl-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--sand); }
+  .tl-item:last-child { border-bottom: none; }
+  .tl-ic {
+    width: 30px; height: 30px; border-radius: 8px; flex: none; display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .tl-ic.order { background: var(--teal-soft); color: var(--teal-strong); }
+  .tl-ic.quote { background: var(--warning-soft); color: var(--warning); }
+  .tl-ic.visit { background: var(--success-soft); color: var(--success); }
+  .tl-body { flex: 1; min-width: 0; }
+  .tl-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .tl-title { font-weight: 600; font-size: 13.5px; }
+  .tl-date { font-size: 12px; color: var(--ink-muted); white-space: nowrap; }
+  .tl-desc { font-size: 13px; color: var(--ink-muted); margin-top: 2px; }
+
+  /* Dialogs */
+  dialog {
+    border: none; border-radius: 14px; padding: 0; width: min(560px, 92vw);
+    background: var(--surface); color: var(--ink); box-shadow: var(--shadow);
+  }
+  dialog::backdrop { background: rgba(20,24,20,0.45); backdrop-filter: blur(1px); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--sand); }
+  .modal-head h2 { font-size: 18px; }
+  .modal-body { padding: 20px; max-height: 64vh; overflow-y: auto; }
+  .modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--sand); }
+  .icon-btn {
+    border: none; background: none; color: var(--ink-muted); cursor: pointer; font-size: 16px;
+    width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { background: var(--surface-2); color: var(--ink); }
+
+  #confirm-dialog .modal-body { font-size: 13.5px; color: var(--ink-muted); padding-top: 18px; }
+
+  /* Toasts */
+  #toast-wrap { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 90; }
+  .toast {
+    background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 9px; font-size: 13px;
+    box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px;
+    animation: toast-in .18s ease-out;
+  }
+  .toast.error { background: var(--danger); }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .mobile-topbar { display: none; }
+
+  @media (max-width: 860px) {
+    #app { flex-direction: column; }
+    .sidebar { width: auto; height: auto; position: static; flex-direction: row; align-items: center; padding: 12px 16px; overflow-x: auto; }
+    .sidebar .brand-sub, .sidebar-foot, .global-search { display: none; }
+    nav.primary-nav { flex-direction: row; }
+    main.content { padding: 20px 16px 50px; }
+    .field-row { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+
+<div id="app"></div>
+<div id="toast-wrap"></div>
+<div id="chart-tooltip" class="chart-tooltip" role="status" aria-live="polite"></div>
+
+<dialog id="form-dialog">
+  <div class="modal-head">
+    <h2 id="form-dialog-title">Formulário</h2>
+    <button class="icon-btn" data-action="close-dialog" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body" id="form-dialog-body"></div>
+  <div class="modal-foot" id="form-dialog-foot"></div>
+</dialog>
+
+<dialog id="confirm-dialog">
+  <div class="modal-head">
+    <h2 id="confirm-title">Confirmar</h2>
+    <button class="icon-btn" data-action="close-confirm" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body" id="confirm-body"></div>
+  <div class="modal-foot">
+    <button class="btn" data-action="close-confirm">Cancelar</button>
+    <button class="btn btn-primary" id="confirm-ok-btn">Confirmar</button>
+  </div>
+</dialog>
+
+<dialog id="export-dialog">
+  <div class="modal-head">
+    <h2>Exportar dados</h2>
+    <button class="icon-btn" data-action="close-export" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <p style="margin:0 0 16px;color:var(--ink-muted);font-size:13.5px;">Descarregue uma cópia completa dos seus clientes, encomendas, orçamentos e visitas num único ficheiro — útil como salvaguarda ou para levar os dados para outro sistema.</p>
+    <button class="btn btn-primary" id="export-json-btn">⭳ Descarregar cópia (.json)</button>
+    <div id="export-status" style="margin-top:10px;font-size:12.5px;"></div>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+
+  /* ============ State ============ */
+  var state = { clients: [], orders: [], quotes: [], visits: [], counters: { quote: 0 }, routeFreq: {} };
+  var saveTimer = null;
+  var savePending = false;
+  var route = { page: "dashboard", id: null, tab: "encomendas" };
+
+  var CLIENT_STATUS = {
+    ativo:     { label: "Ativo",         cls: "chip-success" },
+    prospecao: { label: "Em prospeção",  cls: "chip-warning" },
+    inativo:   { label: "Inativo",       cls: "chip-neutral" }
+  };
+  var ORDER_STATUS = {
+    pendente:   { label: "Pendente",   cls: "chip-neutral" },
+    a_produzir: { label: "A produzir", cls: "chip-teal" },
+    concluida:  { label: "Concluída",  cls: "chip-success" },
+    anulada:    { label: "Anulada",    cls: "chip-danger" }
+  };
+  var ORDER_DOC_STATUS = {
+    por_lancar:   { label: "Por lançar",  cls: "chip-neutral" },
+    lancado:      { label: "Lançado",     cls: "chip-teal" },
+    por_faturar:  { label: "Por faturar", cls: "chip-warning" }
+  };
+  var QUOTE_STATUS = {
+    rascunho:  { label: "Rascunho",  cls: "chip-neutral" },
+    enviado:   { label: "Enviado",   cls: "chip-teal" },
+    aceite:    { label: "Aceite",    cls: "chip-success" },
+    rejeitado: { label: "Rejeitado", cls: "chip-danger" },
+    expirado:  { label: "Expirado",  cls: "chip-warning" }
+  };
+  var VISIT_STATUS = {
+    agendada:  { label: "Agendada",  cls: "chip-teal" },
+    realizada: { label: "Realizada", cls: "chip-success" },
+    cancelada: { label: "Cancelada", cls: "chip-danger" }
+  };
+  var KNOWN_ZONAS = ["Anha", "Arcos de Valdevez", "Barca", "Barcelos", "Espanha", "Esposende", "Lanheses", "Maia", "Melgaço", "Monção", "Neiva", "Neutro", "Paredes de Coura", "Ponte da Barca", "Ponte de Lima", "Povoa de Varzim", "Viana do Castelo", "Vila Verde"];
+  var KNOWN_COMERCIAIS = ["João", "David", "Balcão", "S/ comercial"];
+  var KNOWN_MATERIAIS = ["Chapas Lisas", "Chapas Quinadas", "Ferragens", "Mosquiteiras", "Painéis", "Portas", "Portas Pivotantes", "Portas chapeadas", "Produtos Químicos", "Vedante"];
+
+  /* ============ Utils ============ */
+  function uid(prefix) {
+    return prefix + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return "";
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function fmtMoney(v) {
+    var n = Number(v || 0);
+    return new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(n);
+  }
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
+    if (isNaN(d)) return "—";
+    return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short", year: "numeric" }).format(d);
+  }
+  function fmtDateTimeShort(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(d);
+  }
+  function todayISO() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function daysUntil(iso) {
+    if (!iso) return null;
+    var target = new Date(iso + "T00:00:00");
+    var now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return Math.round((target - now) / 86400000);
+  }
+  function debounce(fn, ms) {
+    var t;
+    return function () {
+      clearTimeout(t);
+      var args = arguments;
+      t = setTimeout(function () { fn.apply(null, args); }, ms);
+    };
+  }
+  function clientById(id) { return state.clients.find(function (c) { return c.id === id; }); }
+  function clientName(id) { var c = clientById(id); return c ? c.name : "Cliente removido"; }
+  function initials(name) {
+    var parts = (name || "").trim().split(/\s+/);
+    if (!parts[0]) return "?";
+    var s = parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "");
+    return s.toUpperCase();
+  }
+  function statusMeta(map, key) { return map[key] || { label: key, cls: "chip-neutral" }; }
+  function chip(map, key) {
+    var m = statusMeta(map, key);
+    return '<span class="chip ' + m.cls + '">' + escapeHtml(m.label) + "</span>";
+  }
+  function selectOptions(map, selected) {
+    return Object.keys(map).map(function (k) {
+      return '<option value="' + k + '"' + (k === selected ? " selected" : "") + ">" + escapeHtml(map[k].label) + "</option>";
+    }).join("");
+  }
+  function datalistHtml(id, values) {
+    return '<datalist id="' + id + '">' + values.map(function (v) { return '<option value="' + escapeHtml(v) + '">'; }).join("") + "</datalist>";
+  }
+  function clientOptions(selectedId) {
+    var sorted = state.clients.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); });
+    if (!sorted.length) return '<option value="">Sem clientes — crie um primeiro</option>';
+    var out = '<option value="" disabled' + (selectedId ? "" : " selected") + ">Escolha um cliente…</option>";
+    out += sorted.map(function (c) {
+      return '<option value="' + c.id + '"' + (c.id === selectedId ? " selected" : "") + ">" + escapeHtml(c.name) + "</option>";
+    }).join("");
+    return out;
+  }
+
+  /* ============ Persistence ============ */
+  function ensureShape(obj) {
+    obj = obj && typeof obj === "object" ? obj : {};
+    obj.clients = Array.isArray(obj.clients) ? obj.clients : [];
+    obj.orders = Array.isArray(obj.orders) ? obj.orders : [];
+    obj.quotes = Array.isArray(obj.quotes) ? obj.quotes : [];
+    obj.visits = Array.isArray(obj.visits) ? obj.visits : [];
+    obj.counters = obj.counters && typeof obj.counters === "object" ? obj.counters : { quote: 0 };
+    obj.counters.quote = obj.counters.quote || 0;
+    obj.routeFreq = obj.routeFreq && typeof obj.routeFreq === "object" ? obj.routeFreq : {};
+    return obj;
+  }
+
+  function loadLocalBackup() {
+    try {
+      var raw = localStorage.getItem("carteira-clientes-db");
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return null;
+  }
+  function saveLocalBackup() {
+    try { localStorage.setItem("carteira-clientes-db", JSON.stringify(state)); } catch (e) {}
+  }
+
+  function setSaveIndicator(mode, text) {
+    var el = document.getElementById("save-indicator");
+    if (!el) return;
+    el.className = mode;
+    el.querySelector(".txt").textContent = text;
+  }
+
+  function scheduleSave() {
+    savePending = true;
+    setSaveIndicator("saving", "A guardar…");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(doSave, 550);
+  }
+
+  function doSave() {
+    saveLocalBackup();
+    fetch("/api/state", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(state)
+    }).then(function (res) {
+      if (res.status === 401) { savePending = false; showLoginGate(); return; }
+      if (!res.ok) throw new Error("save failed");
+      savePending = false;
+      setSaveIndicator("saved", "Guardado");
+    }).catch(function () {
+      setSaveIndicator("error", "Erro ao guardar — nova tentativa em breve");
+      saveTimer = setTimeout(doSave, 2500);
+    });
+  }
+
+  function init() {
+    fetch("/api/state", { credentials: "same-origin", cache: "no-store" }).then(function (res) {
+      if (res.status === 401) { showLoginGate(); return null; }
+      if (!res.ok) throw new Error("load failed");
+      return res.json();
+    }).then(function (data) {
+      if (data === null) return;
+      state = ensureShape(data);
+      finishInit();
+    }).catch(function () {
+      state = ensureShape(loadLocalBackup());
+      finishInit();
+      setSaveIndicator("error", "Sem ligação ao servidor — a mostrar cópia local");
+    });
+  }
+
+  function finishInit() {
+    render();
+  }
+
+  function showLoginGate(errorMsg) {
+    var app = document.getElementById("app");
+    app.innerHTML =
+      '<div class="login-gate"><form id="login-form" class="login-card">' +
+      '<div class="brand-mark" style="margin:0 auto 14px;">C</div>' +
+      "<h1>Carteira de Clientes</h1>" +
+      '<p class="sub">Introduz a palavra-passe para continuar</p>' +
+      (errorMsg ? '<div class="login-error">' + escapeHtml(errorMsg) + "</div>" : "") +
+      '<input class="input" type="password" id="login-password" autocomplete="current-password" placeholder="Palavra-passe" required autofocus>' +
+      '<button class="btn btn-primary" type="submit">Entrar</button>' +
+      "</form></div>";
+    var form = document.getElementById("login-form");
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var pw = document.getElementById("login-password").value;
+      fetch("/api/login", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ password: pw })
+      }).then(function (res) {
+        if (!res.ok) { showLoginGate("Palavra-passe incorreta."); return; }
+        init();
+      }).catch(function () { showLoginGate("Erro de ligação. Tenta novamente."); });
+    });
+    var pwInput = document.getElementById("login-password");
+    if (pwInput) setTimeout(function () { pwInput.focus(); }, 30);
+  }
+
+  /* ============ Toasts ============ */
+  function toast(msg, type) {
+    var wrap = document.getElementById("toast-wrap");
+    var el = document.createElement("div");
+    el.className = "toast" + (type === "error" ? " error" : "");
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(function () { el.remove(); }, 3200);
+  }
+
+  /* ============ Global search ============ */
+  function searchAll(q) {
+    var out = [];
+    state.clients.forEach(function (c) {
+      var hay = [c.name, c.email, c.phone, c.nif, c.city].filter(Boolean).join(" ").toLowerCase();
+      if (hay.indexOf(q) > -1) out.push({ type: "client", ic: "●", title: c.name, sub: [c.email, c.phone].filter(Boolean).join(" · ") || "Cliente", nav: "/clientes/" + encodeURIComponent(c.id) });
+    });
+    state.orders.forEach(function (o) {
+      var hay = [o.documentNumber, o.materialType, o.description, clientName(o.clientId)].filter(Boolean).join(" ").toLowerCase();
+      if (hay.indexOf(q) > -1) out.push({ type: "order", ic: "▣", title: (o.documentNumber ? o.documentNumber + " — " : "") + o.description, sub: clientName(o.clientId), nav: "/clientes/" + encodeURIComponent(o.clientId) + "/encomendas" });
+    });
+    state.quotes.forEach(function (qt) {
+      var hay = [qt.number, qt.description, clientName(qt.clientId)].filter(Boolean).join(" ").toLowerCase();
+      if (hay.indexOf(q) > -1) out.push({ type: "quote", ic: "▤", title: qt.number + " — " + qt.description, sub: clientName(qt.clientId), nav: "/clientes/" + encodeURIComponent(qt.clientId) + "/orcamentos" });
+    });
+    state.visits.forEach(function (v) {
+      var hay = [v.purpose, clientName(v.clientId)].filter(Boolean).join(" ").toLowerCase();
+      if (hay.indexOf(q) > -1) out.push({ type: "visit", ic: "▲", title: v.purpose, sub: clientName(v.clientId) + " · " + fmtDate(v.date), nav: "/clientes/" + encodeURIComponent(v.clientId) + "/visitas" });
+    });
+    return out.slice(0, 6);
+  }
+  function renderGlobalSearch(query) {
+    var results = document.getElementById("global-search-results");
+    if (!results) return;
+    var q = query.trim().toLowerCase();
+    if (!q) { results.hidden = true; results.innerHTML = ""; return; }
+    var matches = searchAll(q);
+    results.innerHTML = matches.length
+      ? matches.map(function (m) {
+          return '<button type="button" class="sr-item" data-sr-nav="' + m.nav + '"><span class="sr-ic ' + m.type + '">' + m.ic + '</span><span><span class="sr-title">' + escapeHtml(m.title) + '</span><br><span class="sr-sub">' + escapeHtml(m.sub) + "</span></span></button>";
+        }).join("")
+      : '<div class="sr-empty">Sem resultados para “' + escapeHtml(query.trim()) + '”.</div>';
+    results.hidden = false;
+    results.querySelectorAll("[data-sr-nav]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        navigate(btn.getAttribute("data-sr-nav"));
+        results.hidden = true;
+        var input = document.getElementById("global-search-input");
+        if (input) input.value = "";
+      });
+    });
+  }
+
+  /* ============ Router ============ */
+  function parseHash() {
+    var h = location.hash.replace(/^#\/?/, "");
+    var parts = h.split("/").filter(Boolean).map(decodeURIComponent);
+    if (parts.length === 0) return { page: "dashboard" };
+    if (parts[0] === "clientes" && parts[1]) return { page: "cliente", id: parts[1], tab: parts[2] || "encomendas" };
+    return { page: parts[0] || "dashboard" };
+  }
+  function navigate(hash) { location.hash = hash; }
+  var lastPage = null;
+  window.addEventListener("hashchange", function () {
+    route = parseHash();
+    if (route.page !== "cliente") route.tab = "encomendas";
+    if (route.page !== lastPage) {
+      clientSearchTerm = "";
+      clientStatusFilter = "";
+      orderFilter = { status: "", q: "" };
+      quoteFilter = { status: "", q: "" };
+      visitFilter = { status: "", q: "" };
+    }
+    lastPage = route.page;
+    render();
+  });
+
+  /* ============ Rendering: shell ============ */
+  var NAV_ITEMS = [
+    { page: "dashboard", label: "Painel", ic: "◆" },
+    { page: "clientes", label: "Clientes", ic: "●" },
+    { page: "encomendas", label: "Encomendas", ic: "▣" },
+    { page: "orcamentos", label: "Orçamentos", ic: "▤" },
+    { page: "visitas", label: "Visitas", ic: "▲" },
+    { page: "voltas", label: "Voltas", ic: "◈" }
+  ];
+
+  function render() {
+    var app = document.getElementById("app");
+    var activePage = route.page === "cliente" ? "clientes" : route.page;
+    app.innerHTML =
+      '<aside class="sidebar">' +
+        '<div class="brand"><div class="brand-mark">C</div><div><div class="brand-name">Carteira de Clientes</div><div class="brand-sub">Gestão comercial</div></div></div>' +
+        '<div class="global-search"><input id="global-search-input" class="input" placeholder="Pesquisar tudo… ( / )" autocomplete="off"><div id="global-search-results" class="search-results" hidden></div></div>' +
+        '<nav class="primary-nav">' +
+        NAV_ITEMS.map(function (item) {
+          var count = item.page === "clientes" ? state.clients.length
+            : item.page === "encomendas" ? state.orders.length
+            : item.page === "orcamentos" ? state.quotes.length
+            : item.page === "visitas" ? state.visits.length : null;
+          return '<button class="nav-link' + (activePage === item.page ? " active" : "") + '" data-nav="' + item.page + '">' +
+            '<span class="ic">' + item.ic + "</span><span>" + item.label + "</span>" +
+            (count !== null ? '<span class="count">' + count + "</span>" : "") +
+            "</button>";
+        }).join("") +
+        "</nav>" +
+        '<div class="sidebar-foot"><button class="btn btn-ghost btn-sm" id="export-btn">⭳ Exportar dados</button><div id="save-indicator" class="saved"><span class="dot"></span><span class="txt">Guardado</span></div></div>' +
+      "</aside>" +
+      '<main class="content" id="content"></main>';
+
+    document.querySelectorAll("[data-nav]").forEach(function (btn) {
+      btn.addEventListener("click", function () { navigate("/" + btn.getAttribute("data-nav")); });
+    });
+
+    var exportOpenBtn = document.getElementById("export-btn");
+    if (exportOpenBtn) exportOpenBtn.addEventListener("click", function () { exportDialog.showModal(); });
+
+    var gsInput = document.getElementById("global-search-input");
+    if (gsInput) {
+      gsInput.addEventListener("input", debounce(function () { renderGlobalSearch(gsInput.value); }, 120));
+      gsInput.addEventListener("focus", function () { if (gsInput.value.trim()) renderGlobalSearch(gsInput.value); });
+      gsInput.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") { gsInput.value = ""; var r = document.getElementById("global-search-results"); if (r) r.hidden = true; gsInput.blur(); }
+      });
+    }
+
+    var content = document.getElementById("content");
+    if (route.page === "dashboard") content.innerHTML = renderDashboard();
+    else if (route.page === "clientes") content.innerHTML = renderClientsList();
+    else if (route.page === "cliente") content.innerHTML = renderClientDetail(route.id);
+    else if (route.page === "encomendas") content.innerHTML = renderOrders();
+    else if (route.page === "orcamentos") content.innerHTML = renderQuotes();
+    else if (route.page === "visitas") content.innerHTML = renderVisits();
+    else if (route.page === "voltas") content.innerHTML = renderVoltas();
+    else content.innerHTML = renderDashboard();
+
+    bindContentActions();
+  }
+
+  /* ============ Charts ============ */
+  var MONTH_ABBR_PT = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  function lastNMonthKeys(n) {
+    var now = new Date();
+    var out = [];
+    for (var i = n - 1; i >= 0; i--) {
+      var dt = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      out.push({ key: dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0"), label: MONTH_ABBR_PT[dt.getMonth()] });
+    }
+    return out;
+  }
+  function niceMax(v) {
+    if (!v || v <= 0) return 100;
+    var mag = Math.pow(10, Math.floor(Math.log(v) / Math.LN10));
+    var norm = v / mag;
+    var step = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+    return step * mag;
+  }
+  function compactMoney(v) {
+    var n = Number(v || 0);
+    var abs = Math.abs(n);
+    if (abs >= 1000000) return (n / 1000000).toFixed(abs % 1000000 === 0 ? 0 : 1).replace(".", ",") + "M€";
+    if (abs >= 1000) return (n / 1000).toFixed(abs % 1000 === 0 ? 0 : 1).replace(".", ",") + "k€";
+    return Math.round(n) + "€";
+  }
+  function barGroup(x, y, w, h, baseline, colorVar, cat, series, valueText) {
+    if (h < 0) h = 0;
+    var r = h > 0 ? Math.min(4, w / 2, h / 2) : 0;
+    var top = h > 0 ? '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="' + r.toFixed(1) + '" ry="' + r.toFixed(1) + '" fill="' + colorVar + '"/>' : "";
+    var square = h > r ? '<rect x="' + x.toFixed(1) + '" y="' + (baseline - r).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + r.toFixed(1) + '" fill="' + colorVar + '"/>' : "";
+    if (!top && !square) return "";
+    return '<g class="bar" tabindex="0" data-tt-cat="' + escapeHtml(cat) + '" data-tt-series="' + escapeHtml(series) + '" data-tt-value="' + escapeHtml(valueText) + '">' + top + square + "</g>";
+  }
+  function svgGroupedBarChart(months, seriesAVals, seriesBVals, labelA, labelB) {
+    var W = 520, H = 210, ML = 42, MR = 6, MT = 8, MB = 24;
+    var plotW = W - ML - MR, plotH = H - MT - MB, baseline = MT + plotH;
+    var max = niceMax(Math.max.apply(null, seriesAVals.concat(seriesBVals)));
+    var n = months.length;
+    var slotW = plotW / n;
+    var barW = Math.max(4, Math.min(22, (slotW - 12) / 2));
+    var groupW = barW * 2 + 3;
+    var svg = '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="' + escapeHtml(labelA + " e " + labelB + " por mês") + '">';
+    [0, 0.5, 1].forEach(function (f) {
+      var y = MT + plotH - f * plotH;
+      svg += '<line class="grid-line" x1="' + ML + '" y1="' + y.toFixed(1) + '" x2="' + (W - MR) + '" y2="' + y.toFixed(1) + '"/>';
+      svg += '<text class="axis-label" x="' + (ML - 6) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end">' + escapeHtml(compactMoney(max * f)) + "</text>";
+    });
+    months.forEach(function (m, i) {
+      var slotX = ML + i * slotW;
+      var gx = slotX + (slotW - groupW) / 2;
+      var av = seriesAVals[i], bv = seriesBVals[i];
+      var ah = max > 0 ? (av / max) * plotH : 0;
+      var bh = max > 0 ? (bv / max) * plotH : 0;
+      svg += barGroup(gx, baseline - ah, barW, ah, baseline, "var(--teal)", m.label, labelA, fmtMoney(av));
+      svg += barGroup(gx + barW + 3, baseline - bh, barW, bh, baseline, "var(--series-2)", m.label, labelB, fmtMoney(bv));
+      svg += '<text class="cat-label" x="' + (gx + groupW / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + escapeHtml(m.label) + "</text>";
+    });
+    svg += "</svg>";
+    return svg;
+  }
+  function svgHorizontalBarChart(items) {
+    var W = 520, rowH = 28, labelW = 92, padR = 40;
+    var barMaxW = W - labelW - padR;
+    var H = items.length * rowH + 6;
+    var max = Math.max.apply(null, items.map(function (e) { return e.value; }).concat([1]));
+    var svg = '<svg class="chart-svg" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Clientes por zona">';
+    items.forEach(function (e, i) {
+      var rowY = i * rowH + 3;
+      var barH = Math.min(20, rowH - 8);
+      var barY = rowY + (rowH - 8 - barH) / 2;
+      var w = max > 0 ? (e.value / max) * barMaxW : 0;
+      var lbl = e.label.length > 14 ? e.label.slice(0, 13) + "…" : e.label;
+      svg += '<text class="cat-label" x="' + (labelW - 8) + '" y="' + (barY + barH / 2 + 3.5).toFixed(1) + '" text-anchor="end">' + escapeHtml(lbl) + "</text>";
+      svg += barGroup(labelW, barY, w, barH, barY + barH, "var(--teal)", e.label, "Clientes", String(e.value));
+      svg += '<text class="val-label" x="' + (labelW + w + 6).toFixed(1) + '" y="' + (barY + barH / 2 + 3.5).toFixed(1) + '" text-anchor="start">' + e.value + "</text>";
+    });
+    svg += "</svg>";
+    return svg;
+  }
+  function renderMonthlyChart() {
+    var months = lastNMonthKeys(6);
+    var orderVals = months.map(function (m) {
+      return state.orders.filter(function (o) { return (o.date || "").slice(0, 7) === m.key; }).reduce(function (s, o) { return s + Number(o.amount || 0); }, 0);
+    });
+    var quoteVals = months.map(function (m) {
+      return state.quotes.filter(function (q) { return (q.date || "").slice(0, 7) === m.key; }).reduce(function (s, q) { return s + Number(q.amount || 0); }, 0);
+    });
+    var hasData = orderVals.concat(quoteVals).some(function (v) { return v > 0; });
+    return '<div class="chart-card"><div class="chart-title">Encomendas e orçamentos por mês</div>' +
+      '<div class="chart-sub">Valor total, últimos 6 meses</div>' +
+      (hasData ? svgGroupedBarChart(months, orderVals, quoteVals, "Encomendas", "Orçamentos") +
+        '<div class="chart-legend"><div class="lg-item"><span class="lg-swatch" style="background:var(--teal)"></span>Encomendas</div>' +
+        '<div class="lg-item"><span class="lg-swatch" style="background:var(--series-2)"></span>Orçamentos</div></div>'
+        : '<div class="chart-empty-note">Ainda sem valores suficientes para mostrar.</div>') +
+      "</div>";
+  }
+  function renderZonaChart() {
+    var counts = {};
+    state.clients.forEach(function (c) {
+      var z = (c.zona || "").trim() || "Sem zona";
+      counts[z] = (counts[z] || 0) + 1;
+    });
+    var entries = Object.keys(counts).map(function (k) { return { label: k, value: counts[k] }; });
+    entries.sort(function (a, b) { return b.value - a.value; });
+    var TOP = 7;
+    var top = entries.slice(0, TOP);
+    var restSum = entries.slice(TOP).reduce(function (s, e) { return s + e.value; }, 0);
+    if (restSum > 0) top.push({ label: "Outras", value: restSum });
+    return '<div class="chart-card"><div class="chart-title">Clientes por zona</div>' +
+      '<div class="chart-sub">Distribuição da carteira</div>' +
+      (top.length ? svgHorizontalBarChart(top) : '<div class="chart-empty-note">Sem clientes para mostrar.</div>') +
+      "</div>";
+  }
+
+  /* ============ Dashboard ============ */
+  function renderDashboard() {
+    var openOrders = state.orders.filter(function (o) { return o.status !== "concluida" && o.status !== "anulada"; }).length;
+    var pendingQuotes = state.quotes.filter(function (q) { return q.status === "rascunho" || q.status === "enviado"; }).length;
+    var upcomingVisits = state.visits.filter(function (v) { return v.status === "agendada" && daysUntil(v.date) !== null && daysUntil(v.date) >= 0 && daysUntil(v.date) <= 7; });
+    var acceptedValue = state.quotes.filter(function (q) { return q.status === "aceite"; }).reduce(function (s, q) { return s + Number(q.amount || 0); }, 0);
+
+    var events = [];
+    state.orders.forEach(function (o) { events.push({ type: "order", date: o.date, title: "Encomenda" + (o.documentNumber ? " " + o.documentNumber : ""), sub: clientName(o.clientId) + " · " + o.description, id: o.id }); });
+    state.quotes.forEach(function (q) { events.push({ type: "quote", date: q.date, title: "Orçamento " + q.number, sub: clientName(q.clientId) + " · " + q.description, id: q.id }); });
+    state.visits.forEach(function (v) { events.push({ type: "visit", date: v.date, title: "Visita — " + v.purpose, sub: clientName(v.clientId), id: v.id }); });
+    events.sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+    events = events.slice(0, 8);
+
+    var upcomingList = upcomingVisits.slice().sort(function (a, b) { return a.date.localeCompare(b.date); });
+
+    return (
+      '<div class="page-head"><div><h1>Painel</h1><div class="sub">Resumo da atividade comercial</div></div>' +
+      '<div class="head-actions"><button class="btn btn-primary" data-open-form="cliente">+ Novo cliente</button></div></div>' +
+      '<div class="stat-grid">' +
+        statCard("Clientes", state.clients.length, state.clients.length ? "na carteira" : "comece por adicionar um") +
+        statCard("Encomendas ativas", openOrders, "de " + state.orders.length + " no total") +
+        statCard("Orçamentos por decidir", pendingQuotes, "rascunho ou enviados") +
+        statCard("Valor de orçamentos aceites", fmtMoney(acceptedValue), "acumulado") +
+      "</div>" +
+      '<div class="chart-row">' + renderMonthlyChart() + renderZonaChart() + "</div>" +
+      '<div class="panel">' +
+        '<div class="panel-head"><div><h2>Visitas nos próximos 7 dias</h2></div>' +
+        '<button class="btn btn-sm" data-open-form="visita">+ Agendar visita</button></div>' +
+        '<div class="panel-body">' + (upcomingList.length ? '<div class="table-wrap"><table><thead><tr><th>Data</th><th>Cliente</th><th>Motivo</th><th></th></tr></thead><tbody>' +
+          upcomingList.map(function (v) {
+            var d = daysUntil(v.date);
+            return "<tr>" +
+              "<td>" + fmtDate(v.date) + (d === 0 ? ' <span class="chip chip-warning">hoje</span>' : d === 1 ? ' <span class="chip chip-teal">amanhã</span>' : "") + "</td>" +
+              '<td><a href="#/clientes/' + encodeURIComponent(v.clientId) + '">' + escapeHtml(clientName(v.clientId)) + "</a></td>" +
+              "<td>" + escapeHtml(v.purpose) + "</td>" +
+              '<td class="row-actions"><button class="btn btn-sm" data-open-form="visita" data-id="' + v.id + '">Editar</button></td>' +
+              "</tr>";
+          }).join("") + "</tbody></table></div>" : emptyState("Sem visitas agendadas para os próximos dias.")) +
+        "</div></div>" +
+      '<div class="panel"><div class="panel-head"><h2>Atividade recente</h2></div><div class="panel-body">' +
+        (events.length ? '<div class="timeline">' + events.map(renderTimelineItem).join("") + "</div>" : emptyState("Ainda sem atividade registada.")) +
+      "</div></div>"
+    );
+  }
+  function statCard(label, value, hint) {
+    return '<div class="stat-card"><div class="label">' + escapeHtml(label) + '</div><div class="value' + (String(value).length > 8 ? " small" : "") + '">' + (typeof value === "number" ? value : escapeHtml(value)) + '</div><div class="hint">' + escapeHtml(hint) + "</div></div>";
+  }
+  function emptyState(msg, btnHtml) {
+    return '<div class="empty-state"><div class="ic">◌</div><div>' + escapeHtml(msg) + "</div>" + (btnHtml || "") + "</div>";
+  }
+  function renderTimelineItem(e) {
+    var icMap = { order: "▣", quote: "▤", visit: "▲" };
+    return '<div class="tl-item"><div class="tl-ic ' + e.type + '">' + icMap[e.type] + '</div><div class="tl-body">' +
+      '<div class="tl-top"><span class="tl-title">' + escapeHtml(e.title) + '</span><span class="tl-date">' + fmtDate(e.date) + "</span></div>" +
+      '<div class="tl-desc">' + escapeHtml(e.sub) + "</div></div></div>";
+  }
+
+  /* ============ Sorting ============ */
+  var clientSort = { key: "name", dir: "asc" };
+  var orderSort = { key: "date", dir: "desc" };
+  var quoteSort = { key: "date", dir: "desc" };
+  var visitSort = { key: "date", dir: "desc" };
+  function sortScope(name) {
+    return name === "clients" ? clientSort : name === "orders" ? orderSort : name === "quotes" ? quoteSort : visitSort;
+  }
+  function toggleSort(name, key, defaultDesc) {
+    var s = sortScope(name);
+    if (s.key === key) { s.dir = s.dir === "asc" ? "desc" : "asc"; }
+    else { s.key = key; s.dir = defaultDesc ? "desc" : "asc"; }
+  }
+  function applySort(list, sortState, getters) {
+    var getter = getters[sortState.key];
+    if (!getter) return list;
+    var sorted = list.slice().sort(function (a, b) {
+      var va = getter(a), vb = getter(b);
+      if (typeof va === "number" && typeof vb === "number") return va - vb;
+      return String(va || "").localeCompare(String(vb || ""), "pt", { numeric: true, sensitivity: "base" });
+    });
+    if (sortState.dir === "desc") sorted.reverse();
+    return sorted;
+  }
+  function sortTh(label, key, sortState, scope, extraClass) {
+    var active = sortState.key === key;
+    var arrow = active ? (sortState.dir === "asc" ? " ▲" : " ▼") : "";
+    return '<th class="sortable' + (extraClass ? " " + extraClass : "") + (active ? " sorted" : "") + '" data-sort-scope="' + scope + '" data-sort-key="' + key + '">' + escapeHtml(label) + arrow + "</th>";
+  }
+
+  /* ============ Clients list ============ */
+  var clientSearchTerm = "";
+  var clientStatusFilter = "";
+  function renderClientsList() {
+    var q = clientSearchTerm.toLowerCase();
+    var orderCountMap = {}, lastVisitMap = {};
+    state.orders.forEach(function (o) { orderCountMap[o.clientId] = (orderCountMap[o.clientId] || 0) + 1; });
+    state.visits.forEach(function (v) { if (!lastVisitMap[v.clientId] || v.date > lastVisitMap[v.clientId]) lastVisitMap[v.clientId] = v.date; });
+
+    var list = state.clients.filter(function (c) {
+      if (clientStatusFilter && c.status !== clientStatusFilter) return false;
+      if (!q) return true;
+      return (c.name || "").toLowerCase().indexOf(q) > -1 || (c.email || "").toLowerCase().indexOf(q) > -1 || (c.phone || "").toLowerCase().indexOf(q) > -1 ||
+        (c.zona || "").toLowerCase().indexOf(q) > -1 || (c.nif || "").toLowerCase().indexOf(q) > -1 || (c.number || "").toLowerCase().indexOf(q) > -1;
+    });
+    list = applySort(list, clientSort, {
+      name: function (c) { return c.name; },
+      zona: function (c) { return c.zona; },
+      orders: function (c) { return orderCountMap[c.id] || 0; },
+      lastVisit: function (c) { return lastVisitMap[c.id] || ""; }
+    });
+
+    var rows = list.map(function (c) {
+      var nOrders = orderCountMap[c.id] || 0;
+      var lastVisit = lastVisitMap[c.id];
+      return '<tr class="clickable" data-goto-client="' + c.id + '">' +
+        "<td>" + escapeHtml(c.name) + (c.city ? '<div class="hint" style="color:var(--ink-muted);font-size:12px;margin-top:2px;">' + escapeHtml(c.city) + "</div>" : "") + "</td>" +
+        "<td>" + (c.zona ? escapeHtml(c.zona) : '<span style="color:var(--ink-muted)">—</span>') + (c.volta ? '<div class="hint" style="color:var(--ink-muted);font-size:12px;margin-top:2px;">Volta ' + escapeHtml(c.volta) + "</div>" : "") + "</td>" +
+        "<td>" + chip(CLIENT_STATUS, c.status || "ativo") + "</td>" +
+        "<td>" + (c.email ? escapeHtml(c.email) : '<span style="color:var(--ink-muted)">—</span>') + "<br>" + (c.phone ? '<span class="mono" style="font-size:12.5px;">' + escapeHtml(c.phone) + "</span>" : "") + "</td>" +
+        '<td class="num">' + nOrders + "</td>" +
+        "<td>" + (lastVisit ? fmtDate(lastVisit) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
+        '<td class="row-actions"><button class="btn btn-sm" data-goto-client="' + c.id + '">Ver ficha</button></td>' +
+        "</tr>";
+    }).join("");
+
+    return (
+      '<div class="page-head"><div><h1>Clientes</h1><div class="sub">' + state.clients.length + " na carteira</div></div>" +
+      '<div class="head-actions"><button class="btn btn-primary" data-open-form="cliente">+ Novo cliente</button></div></div>' +
+      '<div class="search-row"><input class="input search-input" id="client-search" placeholder="Pesquisar por nome, zona, NIF, email ou telefone…" value="' + escapeHtml(clientSearchTerm) + '">' +
+      '<select class="input filter-input" id="client-status-filter"><option value="">Todos os estados</option>' + Object.keys(CLIENT_STATUS).map(function (k) { return '<option value="' + k + '"' + (clientStatusFilter === k ? " selected" : "") + ">" + CLIENT_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
+      '<div class="panel"><div class="panel-body">' +
+      (list.length ? '<div class="table-wrap"><table><thead><tr>' + sortTh("Nome", "name", clientSort, "clients") + sortTh("Zona", "zona", clientSort, "clients") + "<th>Estado</th><th>Contacto</th>" + sortTh("Encomendas", "orders", clientSort, "clients", "num") + sortTh("Última visita", "lastVisit", clientSort, "clients") + "<th></th></tr></thead><tbody>" + rows + "</tbody></table></div>"
+        : emptyState(state.clients.length ? "Sem resultados para essa pesquisa." : "Ainda não tem clientes registados.", state.clients.length ? "" : '<button class="btn btn-primary" data-open-form="cliente">+ Novo cliente</button>')) +
+      "</div></div>"
+    );
+  }
+
+  /* ============ Client detail ============ */
+  function renderClientDetail(id) {
+    var c = clientById(id);
+    if (!c) {
+      return '<div class="page-head"><h1>Cliente não encontrado</h1></div>' + emptyState("Este cliente pode ter sido removido.", '<a class="btn" href="#/clientes">Voltar aos clientes</a>');
+    }
+    var orders = state.orders.filter(function (o) { return o.clientId === id; }).sort(function (a, b) { return b.date.localeCompare(a.date); });
+    var quotes = state.quotes.filter(function (q) { return q.clientId === id; }).sort(function (a, b) { return b.date.localeCompare(a.date); });
+    var visits = state.visits.filter(function (v) { return v.clientId === id; }).sort(function (a, b) { return b.date.localeCompare(a.date); });
+
+    var tab = route.tab || "encomendas";
+    var tabBody;
+    if (tab === "encomendas") {
+      tabBody = orders.length ? tableOrders(orders, true) : emptyState("Sem encomendas para este cliente.", '<button class="btn btn-primary" data-open-form="encomenda" data-client="' + id + '">+ Nova encomenda</button>');
+    } else if (tab === "orcamentos") {
+      tabBody = quotes.length ? tableQuotes(quotes, true) : emptyState("Sem orçamentos para este cliente.", '<button class="btn btn-primary" data-open-form="orcamento" data-client="' + id + '">+ Novo orçamento</button>');
+    } else {
+      tabBody = visits.length ? tableVisits(visits, true) : emptyState("Sem visitas registadas para este cliente.", '<button class="btn btn-primary" data-open-form="visita" data-client="' + id + '">+ Agendar visita</button>');
+    }
+
+    var addLabel = tab === "encomendas" ? "+ Nova encomenda" : tab === "orcamentos" ? "+ Novo orçamento" : "+ Agendar visita";
+    var addKind = tab === "encomendas" ? "encomenda" : tab === "orcamentos" ? "orcamento" : "visita";
+
+    var openOrders = orders.filter(function (o) { return o.status !== "concluida" && o.status !== "anulada"; });
+    var openOrdersValue = openOrders.reduce(function (s, o) { return s + Number(o.amount || 0); }, 0);
+    var openQuotes = quotes.filter(function (q) { return q.status === "rascunho" || q.status === "enviado"; });
+
+    return (
+      '<div style="margin-bottom:14px;"><a href="#/clientes" style="font-size:12.5px;color:var(--ink-muted);text-decoration:none;">← Clientes</a></div>' +
+      '<div class="client-hero"><div class="client-id-block"><div class="client-avatar">' + escapeHtml(initials(c.name)) + '</div><div>' +
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><h1>' + escapeHtml(c.name) + "</h1>" + chip(CLIENT_STATUS, c.status || "ativo") + "</div>" +
+        '<div class="client-meta-list">' +
+          (c.number ? '<span class="mono">Nº ' + escapeHtml(c.number) + "</span>" : "") +
+          (c.nif ? '<span class="mono">NIF ' + escapeHtml(c.nif) + "</span>" : "") +
+          (c.email ? "<span>✉ " + escapeHtml(c.email) + "</span>" : "") +
+          (c.phone ? '<span class="mono">☎ ' + escapeHtml(c.phone) + "</span>" : "") +
+          (c.zona ? "<span>📍 " + escapeHtml(c.zona) + (c.volta ? " · Volta " + escapeHtml(c.volta) : "") + "</span>" : "") +
+          (c.comercial ? "<span>Comercial: " + escapeHtml(c.comercial) + "</span>" : "") +
+          ((c.address || c.city) ? "<span>⌂ " + escapeHtml([c.address, c.postalCode, c.city].filter(Boolean).join(", ")) + "</span>" : "") +
+        "</div>" +
+        (c.notes ? '<div class="client-notes">' + escapeHtml(c.notes) + "</div>" : "") +
+      "</div></div>" +
+      '<div class="head-actions"><button class="btn" data-open-form="cliente" data-id="' + c.id + '">Editar</button><button class="btn btn-danger" data-del="cliente" data-id="' + c.id + '">Eliminar</button></div>' +
+      "</div>" +
+      '<div class="stat-grid" style="margin-bottom:20px;">' +
+        statCard("Encomendas em aberto", openOrders.length, openOrders.length ? fmtMoney(openOrdersValue) + " por concluir" : "nenhuma") +
+        statCard("Orçamentos em aberto", openQuotes.length, openQuotes.length ? "por decidir" : "nenhum") +
+        statCard("Plafond", fmtMoney(c.plafond), "limite de crédito") +
+      "</div>" +
+      '<div class="subnav">' +
+        '<button class="' + (tab === "encomendas" ? "active" : "") + '" data-client-tab="encomendas">Encomendas (' + orders.length + ")</button>" +
+        '<button class="' + (tab === "orcamentos" ? "active" : "") + '" data-client-tab="orcamentos">Orçamentos (' + quotes.length + ")</button>" +
+        '<button class="' + (tab === "visitas" ? "active" : "") + '" data-client-tab="visitas">Visitas (' + visits.length + ")</button>" +
+      "</div>" +
+      '<div class="panel"><div class="panel-head"><h2 style="font-size:14px;">' + (tab === "encomendas" ? "Encomendas" : tab === "orcamentos" ? "Orçamentos" : "Visitas") + '</h2>' +
+      '<button class="btn btn-sm btn-primary" data-open-form="' + addKind + '" data-client="' + id + '">' + addLabel + "</button></div>" +
+      '<div class="panel-body">' + tabBody + "</div></div>"
+    );
+  }
+
+  /* ============ Orders page ============ */
+  var orderFilter = { status: "", q: "" };
+  function tableOrders(list, hideClient, sortable) {
+    var head = sortable
+      ? sortTh("Doc.", "doc", orderSort, "orders") + (hideClient ? "" : sortTh("Cliente", "client", orderSort, "orders")) +
+        sortTh("Tipo / Material", "material", orderSort, "orders") + "<th>Descrição</th><th>Estado</th>" + sortTh("Valor", "amount", orderSort, "orders", "num") + sortTh("Data", "date", orderSort, "orders") + sortTh("Entrega prevista", "due", orderSort, "orders") + "<th></th>"
+      : "<th>Doc.</th>" + (hideClient ? "" : "<th>Cliente</th>") + '<th>Tipo / Material</th><th>Descrição</th><th>Estado</th><th class="num">Valor</th><th>Data</th><th>Entrega prevista</th><th></th>';
+    return '<div class="table-wrap"><table><thead><tr>' + head + "</tr></thead><tbody>" +
+      list.map(function (o) {
+        var docStatusLabel = o.docStatus ? statusMeta(ORDER_DOC_STATUS, o.docStatus).label : "";
+        return "<tr>" +
+          '<td class="mono">' + (o.documentNumber ? escapeHtml(o.documentNumber) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
+          (hideClient ? "" : '<td><a href="#/clientes/' + encodeURIComponent(o.clientId) + '">' + escapeHtml(clientName(o.clientId)) + "</a></td>") +
+          "<td>" + (o.materialType ? escapeHtml(o.materialType) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
+          "<td>" + escapeHtml(o.description) + "</td>" +
+          "<td>" + chip(ORDER_STATUS, o.status) + (docStatusLabel ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:3px;">' + escapeHtml(docStatusLabel) + "</div>" : "") + "</td>" +
+          '<td class="num mono">' + fmtMoney(o.amount) + "</td>" +
+          "<td>" + fmtDate(o.date) + "</td>" +
+          "<td>" + fmtDate(o.dueDate) + "</td>" +
+          '<td class="row-actions"><button class="btn btn-sm" data-open-form="encomenda" data-id="' + o.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="encomenda" data-id="' + o.id + '">Eliminar</button></td>' +
+          "</tr>";
+      }).join("") + "</tbody></table></div>";
+  }
+  function renderOrders() {
+    var list = state.orders.filter(function (o) {
+      if (orderFilter.status && o.status !== orderFilter.status) return false;
+      if (orderFilter.q) {
+        var q = orderFilter.q.toLowerCase();
+        return clientName(o.clientId).toLowerCase().indexOf(q) > -1 || (o.description || "").toLowerCase().indexOf(q) > -1 || (o.documentNumber || "").toLowerCase().indexOf(q) > -1 || (o.materialType || "").toLowerCase().indexOf(q) > -1;
+      }
+      return true;
+    });
+    list = applySort(list, orderSort, {
+      doc: function (o) { return o.documentNumber; },
+      client: function (o) { return clientName(o.clientId); },
+      material: function (o) { return o.materialType; },
+      amount: function (o) { return Number(o.amount || 0); },
+      date: function (o) { return o.date || ""; },
+      due: function (o) { return o.dueDate || ""; }
+    });
+
+    return (
+      '<div class="page-head"><div><h1>Encomendas</h1><div class="sub">' + state.orders.length + " no total</div></div>" +
+      '<div class="head-actions"><button class="btn btn-primary" data-open-form="encomenda">+ Nova encomenda</button></div></div>' +
+      '<div class="search-row"><input class="input search-input" id="order-search" placeholder="Pesquisar por cliente, descrição, doc. ou material…" value="' + escapeHtml(orderFilter.q) + '">' +
+      '<select class="input filter-input" id="order-status-filter"><option value="">Todos os estados</option>' + Object.keys(ORDER_STATUS).map(function (k) { return '<option value="' + k + '"' + (orderFilter.status === k ? " selected" : "") + ">" + ORDER_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
+      '<div class="panel"><div class="panel-body">' + (list.length ? tableOrders(list, false, true) : emptyState("Sem encomendas para mostrar.")) + "</div></div>"
+    );
+  }
+
+  /* ============ Quotes page ============ */
+  var quoteFilter = { status: "", q: "" };
+  function tableQuotes(list, hideClient, sortable) {
+    var head = sortable
+      ? sortTh("Nº", "number", quoteSort, "quotes") + (hideClient ? "" : sortTh("Cliente", "client", quoteSort, "quotes")) +
+        sortTh("Tipo / Material", "material", quoteSort, "quotes") + "<th>Descrição</th><th>Estado</th>" + sortTh("Valor", "amount", quoteSort, "quotes", "num") + sortTh("Válido até", "validUntil", quoteSort, "quotes") + "<th></th>"
+      : "<th>Nº</th>" + (hideClient ? "" : "<th>Cliente</th>") + '<th>Tipo / Material</th><th>Descrição</th><th>Estado</th><th class="num">Valor</th><th>Válido até</th><th></th>';
+    return '<div class="table-wrap"><table><thead><tr>' + head + "</tr></thead><tbody>" +
+      list.map(function (q) {
+        return "<tr>" +
+          '<td class="mono">' + escapeHtml(q.number) + "</td>" +
+          (hideClient ? "" : '<td><a href="#/clientes/' + encodeURIComponent(q.clientId) + '">' + escapeHtml(clientName(q.clientId)) + "</a></td>") +
+          "<td>" + (q.materialType ? escapeHtml(q.materialType) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
+          "<td>" + escapeHtml(q.description) + (q.clientRef ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:2px;">Ref. cliente: ' + escapeHtml(q.clientRef) + "</div>" : "") + "</td>" +
+          "<td>" + chip(QUOTE_STATUS, q.status) + "</td>" +
+          '<td class="num mono">' + fmtMoney(q.amount) + "</td>" +
+          "<td>" + fmtDate(q.validUntil) + "</td>" +
+          '<td class="row-actions"><button class="btn btn-sm" data-open-form="orcamento" data-id="' + q.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="orcamento" data-id="' + q.id + '">Eliminar</button></td>' +
+          "</tr>";
+      }).join("") + "</tbody></table></div>";
+  }
+  function renderQuotes() {
+    var list = state.quotes.filter(function (q) {
+      if (quoteFilter.status && q.status !== quoteFilter.status) return false;
+      if (quoteFilter.q) {
+        var s = quoteFilter.q.toLowerCase();
+        return clientName(q.clientId).toLowerCase().indexOf(s) > -1 || (q.description || "").toLowerCase().indexOf(s) > -1 || (q.number || "").toLowerCase().indexOf(s) > -1 || (q.materialType || "").toLowerCase().indexOf(s) > -1;
+      }
+      return true;
+    });
+    list = applySort(list, quoteSort, {
+      number: function (q) { return q.number; },
+      client: function (q) { return clientName(q.clientId); },
+      material: function (q) { return q.materialType; },
+      amount: function (q) { return Number(q.amount || 0); },
+      date: function (q) { return q.date || ""; },
+      validUntil: function (q) { return q.validUntil || ""; }
+    });
+
+    return (
+      '<div class="page-head"><div><h1>Orçamentos</h1><div class="sub">' + state.quotes.length + " no total</div></div>" +
+      '<div class="head-actions"><button class="btn btn-primary" data-open-form="orcamento">+ Novo orçamento</button></div></div>' +
+      '<div class="search-row"><input class="input search-input" id="quote-search" placeholder="Pesquisar por cliente, descrição, material ou nº…" value="' + escapeHtml(quoteFilter.q) + '">' +
+      '<select class="input filter-input" id="quote-status-filter"><option value="">Todos os estados</option>' + Object.keys(QUOTE_STATUS).map(function (k) { return '<option value="' + k + '"' + (quoteFilter.status === k ? " selected" : "") + ">" + QUOTE_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
+      '<div class="panel"><div class="panel-body">' + (list.length ? tableQuotes(list, false, true) : emptyState("Sem orçamentos para mostrar.")) + "</div></div>"
+    );
+  }
+
+  /* ============ Visits page ============ */
+  var visitFilter = { status: "", q: "" };
+  function tableVisits(list, hideClient, sortable) {
+    var head = sortable
+      ? sortTh("Data", "date", visitSort, "visits") + (hideClient ? "" : sortTh("Cliente", "client", visitSort, "visits")) + "<th>Motivo</th><th>Estado</th>" + sortTh("Próxima visita", "next", visitSort, "visits") + "<th></th>"
+      : "<th>Data</th>" + (hideClient ? "" : "<th>Cliente</th>") + "<th>Motivo</th><th>Estado</th><th>Próxima visita</th><th></th>";
+    return '<div class="table-wrap"><table><thead><tr>' + head + "</tr></thead><tbody>" +
+      list.map(function (v) {
+        return "<tr>" +
+          "<td>" + fmtDate(v.date) + "</td>" +
+          (hideClient ? "" : '<td><a href="#/clientes/' + encodeURIComponent(v.clientId) + '">' + escapeHtml(clientName(v.clientId)) + "</a></td>") +
+          "<td>" + escapeHtml(v.purpose) + (v.result ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:2px;">' + escapeHtml(v.result) + "</div>" : "") + "</td>" +
+          "<td>" + chip(VISIT_STATUS, v.status) + "</td>" +
+          "<td>" + (v.nextVisit ? fmtDate(v.nextVisit) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
+          '<td class="row-actions"><button class="btn btn-sm" data-open-form="visita" data-id="' + v.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="visita" data-id="' + v.id + '">Eliminar</button></td>' +
+          "</tr>";
+      }).join("") + "</tbody></table></div>";
+  }
+  function renderVisits() {
+    var list = state.visits.filter(function (v) {
+      if (visitFilter.status && v.status !== visitFilter.status) return false;
+      if (visitFilter.q) {
+        var s = visitFilter.q.toLowerCase();
+        return clientName(v.clientId).toLowerCase().indexOf(s) > -1 || (v.purpose || "").toLowerCase().indexOf(s) > -1;
+      }
+      return true;
+    });
+    list = applySort(list, visitSort, {
+      date: function (v) { return v.date || ""; },
+      client: function (v) { return clientName(v.clientId); },
+      next: function (v) { return v.nextVisit || ""; }
+    });
+
+    return (
+      '<div class="page-head"><div><h1>Visitas</h1><div class="sub">' + state.visits.length + " no total</div></div>" +
+      '<div class="head-actions"><button class="btn btn-primary" data-open-form="visita">+ Agendar visita</button></div></div>' +
+      '<div class="search-row"><input class="input search-input" id="visit-search" placeholder="Pesquisar por cliente ou motivo…" value="' + escapeHtml(visitFilter.q) + '">' +
+      '<select class="input filter-input" id="visit-status-filter"><option value="">Todos os estados</option>' + Object.keys(VISIT_STATUS).map(function (k) { return '<option value="' + k + '"' + (visitFilter.status === k ? " selected" : "") + ">" + VISIT_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
+      '<div class="panel"><div class="panel-body">' + (list.length ? tableVisits(list, false, true) : emptyState("Sem visitas para mostrar.")) + "</div></div>"
+    );
+  }
+
+  /* ============ Voltas ============ */
+  function routeFreqKey(zona, volta) { return zona + "||" + volta; }
+  function renderVoltas() {
+    var groups = {};
+    state.clients.forEach(function (c) {
+      var z = (c.zona || "").trim() || "Sem zona";
+      var v = (c.volta || "").trim() || "Sem volta";
+      groups[z] = groups[z] || {};
+      groups[z][v] = groups[z][v] || [];
+      groups[z][v].push(c);
+    });
+    var zonas = Object.keys(groups).sort(function (a, b) { return a.localeCompare(b, "pt"); });
+    var monthKey = todayISO().slice(0, 7);
+
+    var html = '<div class="page-head"><div><h1>Voltas</h1><div class="sub">Planeamento de visitas por zona e volta — define quantas vezes por mês visitar cada volta</div></div></div>';
+
+    if (!zonas.length) {
+      return html + emptyState("Ainda sem clientes com zona/volta definidas.");
+    }
+
+    zonas.forEach(function (z) {
+      var voltas = Object.keys(groups[z]).sort(function (a, b) { return a.localeCompare(b, "pt", { numeric: true }); });
+      var zonaClientCount = voltas.reduce(function (s, v) { return s + groups[z][v].length; }, 0);
+      html += '<div class="panel"><div class="panel-head"><div><h2>' + escapeHtml(z) + "</h2>" +
+        '<div class="sub">' + zonaClientCount + " cliente(s) · " + voltas.length + " volta(s)</div></div></div>" +
+        '<div class="panel-body">';
+      voltas.forEach(function (v) {
+        var clients = groups[z][v];
+        var key = routeFreqKey(z, v);
+        var freq = state.routeFreq[key] || 0;
+        var clientIds = clients.map(function (c) { return c.id; });
+        var visitsThisMonth = state.visits.filter(function (vi) {
+          return vi.status === "realizada" && (vi.date || "").slice(0, 7) === monthKey && clientIds.indexOf(vi.clientId) !== -1;
+        }).length;
+        var progressCls = freq > 0 && visitsThisMonth >= freq ? "chip-success" : freq > 0 ? "chip-warning" : "chip-neutral";
+        var voltaLabel = v === "Sem volta" ? v : "Volta " + v;
+        html += '<div class="volta-row">' +
+          '<div class="volta-row-head">' +
+            '<div class="volta-name">' + escapeHtml(voltaLabel) + '<span class="volta-count">' + clients.length + " cliente(s)</span></div>" +
+            '<div class="volta-controls">' +
+              '<label class="volta-freq-label">Visitas/mês <input type="number" min="0" step="1" class="input volta-freq-input" data-route-freq="' + escapeHtml(key) + '" value="' + (freq || "") + '" placeholder="0"></label>' +
+              '<span class="chip ' + progressCls + '">' + visitsThisMonth + (freq ? " / " + freq : "") + " este mês</span>" +
+            "</div>" +
+          "</div>" +
+          '<div class="volta-clients">' + clients.map(function (c) {
+            return '<a class="volta-client-chip" href="#/clientes/' + encodeURIComponent(c.id) + '">' + escapeHtml(c.name) + "</a>";
+          }).join("") + "</div>" +
+        "</div>";
+      });
+      html += "</div></div>";
+    });
+
+    return html;
+  }
+
+  /* ============ Forms (dialogs) ============ */
+  var formDialog = null, confirmDialog = null, exportDialog = null;
+
+  function openForm(kind, id, presetClientId) {
+    var title, bodyHtml, footHtml;
+    if (kind === "cliente") {
+      var c = id ? clientById(id) : null;
+      title = c ? "Editar cliente" : "Novo cliente";
+      bodyHtml =
+        field("Nome", '<input class="input" id="f-name" value="' + escapeHtml(c ? c.name : "") + '" required>', true) +
+        '<div class="field-row">' +
+          field("Nº de cliente", '<input class="input" id="f-number" value="' + escapeHtml(c ? c.number : "") + '">') +
+          field("NIF", '<input class="input" id="f-nif" value="' + escapeHtml(c ? c.nif : "") + '">') +
+        "</div>" +
+        '<div class="field-row">' +
+          field("Email", '<input class="input" type="email" id="f-email" value="' + escapeHtml(c ? c.email : "") + '">') +
+          field("Telefone", '<input class="input" id="f-phone" value="' + escapeHtml(c ? c.phone : "") + '">') +
+        "</div>" +
+        '<div class="field-row">' +
+          field("Zona", '<input class="input" id="f-zona" list="dl-zonas" value="' + escapeHtml(c ? c.zona : "") + '">' + datalistHtml("dl-zonas", KNOWN_ZONAS)) +
+          field("Volta", '<input class="input" id="f-volta" placeholder="Ex.: 1, 2…" value="' + escapeHtml(c ? c.volta : "") + '">') +
+        "</div>" +
+        '<div class="field-row">' +
+          field("Estado", '<select class="input" id="f-status">' + selectOptions(CLIENT_STATUS, c ? c.status : "ativo") + "</select>") +
+          field("Comercial", '<input class="input" id="f-comercial" list="dl-comerciais" value="' + escapeHtml(c ? c.comercial : "") + '">' + datalistHtml("dl-comerciais", KNOWN_COMERCIAIS)) +
+        "</div>" +
+        '<div class="field-row">' +
+          field("Plafond (€)", '<input class="input" type="number" step="0.01" min="0" id="f-plafond" value="' + (c && c.plafond ? c.plafond : "") + '">') +
+          field("Código postal", '<input class="input" id="f-postal" value="' + escapeHtml(c ? c.postalCode : "") + '">') +
+        "</div>" +
+        '<div class="field-row">' +
+          field("Morada", '<input class="input" id="f-address" value="' + escapeHtml(c ? c.address : "") + '">') +
+          field("Cidade", '<input class="input" id="f-city" value="' + escapeHtml(c ? c.city : "") + '">') +
+        "</div>" +
+        field("Notas", '<textarea class="input" id="f-notes">' + escapeHtml(c ? c.notes : "") + "</textarea>");
+      footHtml = formFooter(function () { saveClient(id); });
+    } else if (kind === "encomenda") {
+      var o = id ? state.orders.find(function (x) { return x.id === id; }) : null;
+      title = o ? "Editar encomenda" : "Nova encomenda";
+      bodyHtml =
+        field("Cliente", '<select class="input" id="f-client" required>' + clientOptions(o ? o.clientId : presetClientId) + "</select>", true) +
+        field("Descrição", '<input class="input" id="f-desc" value="' + escapeHtml(o ? o.description : "") + '" required>', true) +
+        '<div class="field-row">' +
+          field("Nº documento", '<input class="input" id="f-docnum" placeholder="Preenchido quando faturado" value="' + escapeHtml(o ? o.documentNumber : "") + '">') +
+          field("Tipo / Material", '<input class="input" id="f-material" list="dl-materiais" value="' + escapeHtml(o ? o.materialType : "") + '">' + datalistHtml("dl-materiais", KNOWN_MATERIAIS)) +
+        "</div>" +
+        '<div class="field-row">' +
+          field("Estado", '<select class="input" id="f-status">' + selectOptions(ORDER_STATUS, o ? o.status : "pendente") + "</select>") +
+          field("Estado do documento", '<select class="input" id="f-docstatus">' + selectOptions(ORDER_DOC_STATUS, o ? o.docStatus : "por_lancar") + "</select>") +
+        "</div>" +
+        '<div class="field-row">' +
+          field("Valor (€)", '<input class="input" type="number" step="0.01" min="0" id="f-amount" value="' + (o ? o.amount : "") + '">') +
+          field("Data da encomenda", '<input class="input" type="date" id="f-date" value="' + (o ? o.date : todayISO()) + '">') +
+        "</div>" +
+        field("Entrega prevista", '<input class="input" type="date" id="f-due" value="' + (o ? o.dueDate || "" : "") + '">') +
+        field("Notas", '<textarea class="input" id="f-notes">' + escapeHtml(o ? o.notes : "") + "</textarea>");
+      footHtml = formFooter(function () { saveOrder(id); });
+    } else if (kind === "orcamento") {
+      var q = id ? state.quotes.find(function (x) { return x.id === id; }) : null;
+      title = q ? "Editar orçamento" : "Novo orçamento";
+      bodyHtml =
+        field("Cliente", '<select class="input" id="f-client" required>' + clientOptions(q ? q.clientId : presetClientId) + "</select>", true) +
+        field("Descrição", '<input class="input" id="f-desc" value="' + escapeHtml(q ? q.description : "") + '" required>', true) +
+        '<div class="field-row">' +
+          field("Tipo / Material", '<input class="input" id="f-material" list="dl-materiais" value="' + escapeHtml(q ? q.materialType : "") + '">' + datalistHtml("dl-materiais", KNOWN_MATERIAIS)) +
+          field("Ref. cliente", '<input class="input" id="f-clientref" value="' + escapeHtml(q ? q.clientRef : "") + '">') +
+        "</div>" +
+        '<div class="field-row">' +
+          field("Valor (€)", '<input class="input" type="number" step="0.01" min="0" id="f-amount" value="' + (q ? q.amount : "") + '">') +
+          field("Estado", '<select class="input" id="f-status">' + selectOptions(QUOTE_STATUS, q ? q.status : "rascunho") + "</select>") +
+        "</div>" +
+        '<div class="field-row">' +
+          field("Data", '<input class="input" type="date" id="f-date" value="' + (q ? q.date : todayISO()) + '">') +
+          field("Válido até", '<input class="input" type="date" id="f-valid" value="' + (q ? q.validUntil || "" : "") + '">') +
+        "</div>" +
+        field("Comercial", '<input class="input" id="f-comercial" list="dl-comerciais" value="' + escapeHtml(q ? q.comercial : "") + '">' + datalistHtml("dl-comerciais", KNOWN_COMERCIAIS)) +
+        field("Observações", '<textarea class="input" id="f-notes">' + escapeHtml(q ? q.notes : "") + "</textarea>");
+      footHtml = formFooter(function () { saveQuote(id); });
+    } else if (kind === "visita") {
+      var v = id ? state.visits.find(function (x) { return x.id === id; }) : null;
+      title = v ? "Editar visita" : "Agendar visita";
+      bodyHtml =
+        field("Cliente", '<select class="input" id="f-client" required>' + clientOptions(v ? v.clientId : presetClientId) + "</select>", true) +
+        '<div class="field-row">' +
+          field("Data", '<input class="input" type="date" id="f-date" value="' + (v ? v.date : todayISO()) + '">') +
+          field("Estado", '<select class="input" id="f-status">' + selectOptions(VISIT_STATUS, v ? v.status : "agendada") + "</select>") +
+        "</div>" +
+        field("Motivo", '<input class="input" id="f-purpose" value="' + escapeHtml(v ? v.purpose : "") + '" required placeholder="Ex.: apresentação de produto, follow-up…">', true) +
+        field("Resultado", '<textarea class="input" id="f-result" placeholder="O que aconteceu / ficou combinado">' + escapeHtml(v ? v.result : "") + "</textarea>") +
+        field("Próxima visita", '<input class="input" type="date" id="f-nextvisit" value="' + (v ? v.nextVisit || "" : "") + '">') +
+        field("Notas", '<textarea class="input" id="f-notes">' + escapeHtml(v ? v.notes : "") + "</textarea>");
+      footHtml = formFooter(function () { saveVisit(id); });
+    }
+
+    document.getElementById("form-dialog-title").textContent = title;
+    document.getElementById("form-dialog-body").innerHTML = bodyHtml;
+    document.getElementById("form-dialog-foot").innerHTML = footHtml.html;
+    formDialog.showModal();
+    document.getElementById("form-save-btn").addEventListener("click", function (e) {
+      e.preventDefault();
+      var ok = footHtml.onSave();
+      if (ok !== false) formDialog.close();
+    });
+    var firstInput = document.getElementById("form-dialog-body").querySelector(".input");
+    if (firstInput) setTimeout(function () { firstInput.focus(); }, 30);
+  }
+  function field(label, inputHtml, required) {
+    return '<div class="field"><label>' + escapeHtml(label) + (required ? ' <span class="req">*</span>' : "") + "</label>" + inputHtml + "</div>";
+  }
+  function formFooter(onSave) {
+    return { html: '<button class="btn" data-action="close-dialog">Cancelar</button><button class="btn btn-primary" id="form-save-btn">Guardar</button>', onSave: onSave };
+  }
+  function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ""; }
+
+  function saveClient(id) {
+    var name = val("f-name");
+    if (!name) { toast("Indique o nome do cliente.", "error"); return false; }
+    var c = id ? clientById(id) : null;
+    if (!c) { c = { id: uid("cli"), createdAt: new Date().toISOString() }; state.clients.push(c); }
+    c.name = name; c.email = val("f-email"); c.phone = val("f-phone"); c.nif = val("f-nif");
+    c.number = val("f-number"); c.zona = val("f-zona"); c.volta = val("f-volta");
+    c.status = val("f-status"); c.comercial = val("f-comercial"); c.plafond = parseFloat(val("f-plafond")) || 0;
+    c.postalCode = val("f-postal"); c.address = val("f-address"); c.city = val("f-city"); c.notes = val("f-notes");
+    scheduleSave(); render();
+    if (!id) navigate("/clientes/" + encodeURIComponent(c.id));
+    toast(id ? "Cliente atualizado." : "Cliente criado.");
+  }
+  function saveOrder(id) {
+    var clientId = val("f-client"), desc = val("f-desc");
+    if (!clientId) { toast("Escolha um cliente.", "error"); return false; }
+    if (!desc) { toast("Descreva a encomenda.", "error"); return false; }
+    var o = id ? state.orders.find(function (x) { return x.id === id; }) : null;
+    if (!o) { o = { id: uid("ord"), createdAt: new Date().toISOString() }; state.orders.push(o); }
+    o.clientId = clientId; o.description = desc; o.amount = parseFloat(val("f-amount")) || 0;
+    o.documentNumber = val("f-docnum"); o.materialType = val("f-material"); o.docStatus = val("f-docstatus");
+    o.status = val("f-status"); o.date = val("f-date") || todayISO(); o.dueDate = val("f-due"); o.notes = val("f-notes");
+    scheduleSave(); render();
+    toast(id ? "Encomenda atualizada." : "Encomenda criada.");
+  }
+  function saveQuote(id) {
+    var clientId = val("f-client"), desc = val("f-desc");
+    if (!clientId) { toast("Escolha um cliente.", "error"); return false; }
+    if (!desc) { toast("Descreva o orçamento.", "error"); return false; }
+    var q = id ? state.quotes.find(function (x) { return x.id === id; }) : null;
+    if (!q) { state.counters.quote++; q = { id: uid("orc"), number: new Date().getFullYear() + "/" + state.counters.quote, createdAt: new Date().toISOString() }; state.quotes.push(q); }
+    q.clientId = clientId; q.description = desc; q.amount = parseFloat(val("f-amount")) || 0;
+    q.materialType = val("f-material"); q.clientRef = val("f-clientref"); q.comercial = val("f-comercial");
+    q.status = val("f-status"); q.date = val("f-date") || todayISO(); q.validUntil = val("f-valid"); q.notes = val("f-notes");
+    scheduleSave(); render();
+    toast(id ? "Orçamento atualizado." : "Orçamento criado.");
+  }
+  function saveVisit(id) {
+    var clientId = val("f-client"), purpose = val("f-purpose");
+    if (!clientId) { toast("Escolha um cliente.", "error"); return false; }
+    if (!purpose) { toast("Indique o motivo da visita.", "error"); return false; }
+    var v = id ? state.visits.find(function (x) { return x.id === id; }) : null;
+    if (!v) { v = { id: uid("vis"), createdAt: new Date().toISOString() }; state.visits.push(v); }
+    v.clientId = clientId; v.purpose = purpose; v.date = val("f-date") || todayISO(); v.status = val("f-status");
+    v.result = val("f-result"); v.nextVisit = val("f-nextvisit"); v.notes = val("f-notes");
+    scheduleSave(); render();
+    toast(id ? "Visita atualizada." : "Visita agendada.");
+  }
+
+  /* ============ Delete / confirm ============ */
+  function confirmAction(title, message, onOk) {
+    document.getElementById("confirm-title").textContent = title;
+    document.getElementById("confirm-body").textContent = message;
+    confirmDialog.showModal();
+    var btn = document.getElementById("confirm-ok-btn");
+    var handler = function () { confirmDialog.close(); onOk(); btn.removeEventListener("click", handler); };
+    btn.addEventListener("click", handler);
+  }
+  function deleteEntity(kind, id) {
+    if (kind === "cliente") {
+      var relatedCount = state.orders.filter(function (o) { return o.clientId === id; }).length +
+        state.quotes.filter(function (q) { return q.clientId === id; }).length +
+        state.visits.filter(function (v) { return v.clientId === id; }).length;
+      confirmAction("Eliminar cliente", "Esta ação remove o cliente" + (relatedCount ? " e os " + relatedCount + " registo(s) associados (encomendas, orçamentos e visitas)" : "") + ". Não é possível desfazer.", function () {
+        state.clients = state.clients.filter(function (c) { return c.id !== id; });
+        state.orders = state.orders.filter(function (o) { return o.clientId !== id; });
+        state.quotes = state.quotes.filter(function (q) { return q.clientId !== id; });
+        state.visits = state.visits.filter(function (v) { return v.clientId !== id; });
+        scheduleSave(); navigate("/clientes"); toast("Cliente eliminado.");
+      });
+    } else if (kind === "encomenda") {
+      confirmAction("Eliminar encomenda", "Não é possível desfazer esta ação.", function () {
+        state.orders = state.orders.filter(function (o) { return o.id !== id; });
+        scheduleSave(); render(); toast("Encomenda eliminada.");
+      });
+    } else if (kind === "orcamento") {
+      confirmAction("Eliminar orçamento", "Não é possível desfazer esta ação.", function () {
+        state.quotes = state.quotes.filter(function (q) { return q.id !== id; });
+        scheduleSave(); render(); toast("Orçamento eliminado.");
+      });
+    } else if (kind === "visita") {
+      confirmAction("Eliminar visita", "Não é possível desfazer esta ação.", function () {
+        state.visits = state.visits.filter(function (v) { return v.id !== id; });
+        scheduleSave(); render(); toast("Visita eliminada.");
+      });
+    }
+  }
+
+  /* ============ Event delegation ============ */
+  function bindContentActions() {
+    var content = document.getElementById("content");
+    if (!content) return;
+
+    content.querySelectorAll("[data-goto-client]").forEach(function (el) {
+      el.addEventListener("click", function () { navigate("/clientes/" + encodeURIComponent(el.getAttribute("data-goto-client"))); });
+    });
+    content.querySelectorAll("[data-open-form]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        openForm(el.getAttribute("data-open-form"), el.getAttribute("data-id") || null, el.getAttribute("data-client") || null);
+      });
+    });
+    content.querySelectorAll("[data-del]").forEach(function (el) {
+      el.addEventListener("click", function (e) {
+        e.stopPropagation();
+        deleteEntity(el.getAttribute("data-del"), el.getAttribute("data-id"));
+      });
+    });
+    content.querySelectorAll("[data-client-tab]").forEach(function (el) {
+      el.addEventListener("click", function () { navigate("/clientes/" + encodeURIComponent(route.id) + "/" + el.getAttribute("data-client-tab")); });
+    });
+    content.querySelectorAll("th.sortable").forEach(function (th) {
+      th.addEventListener("click", function () {
+        var scope = th.getAttribute("data-sort-scope"), key = th.getAttribute("data-sort-key");
+        var defaultDesc = key === "date" || key === "lastVisit" || key === "validUntil" || key === "due" || key === "next";
+        toggleSort(scope, key, defaultDesc);
+        render();
+      });
+    });
+
+    var clientSearch = document.getElementById("client-search");
+    if (clientSearch) clientSearch.addEventListener("input", debounce(function (e) { clientSearchTerm = e.target.value; render(); restoreFocus("client-search"); }, 200));
+    var clientStatusFilterEl = document.getElementById("client-status-filter");
+    if (clientStatusFilterEl) clientStatusFilterEl.addEventListener("change", function (e) { clientStatusFilter = e.target.value; render(); });
+
+    var orderSearch = document.getElementById("order-search");
+    if (orderSearch) orderSearch.addEventListener("input", debounce(function (e) { orderFilter.q = e.target.value; render(); restoreFocus("order-search"); }, 200));
+    var orderStatusFilter = document.getElementById("order-status-filter");
+    if (orderStatusFilter) orderStatusFilter.addEventListener("change", function (e) { orderFilter.status = e.target.value; render(); });
+
+    var quoteSearch = document.getElementById("quote-search");
+    if (quoteSearch) quoteSearch.addEventListener("input", debounce(function (e) { quoteFilter.q = e.target.value; render(); restoreFocus("quote-search"); }, 200));
+    var quoteStatusFilter = document.getElementById("quote-status-filter");
+    if (quoteStatusFilter) quoteStatusFilter.addEventListener("change", function (e) { quoteFilter.status = e.target.value; render(); });
+
+    var visitSearch = document.getElementById("visit-search");
+    if (visitSearch) visitSearch.addEventListener("input", debounce(function (e) { visitFilter.q = e.target.value; render(); restoreFocus("visit-search"); }, 200));
+    var visitStatusFilter = document.getElementById("visit-status-filter");
+    if (visitStatusFilter) visitStatusFilter.addEventListener("change", function (e) { visitFilter.status = e.target.value; render(); });
+
+    content.querySelectorAll("[data-route-freq]").forEach(function (el) {
+      el.addEventListener("change", function (e) {
+        var key = el.getAttribute("data-route-freq");
+        var n = parseInt(e.target.value, 10);
+        if (n > 0) state.routeFreq[key] = n; else delete state.routeFreq[key];
+        scheduleSave(); render();
+      });
+    });
+  }
+  function restoreFocus(id) {
+    var el = document.getElementById(id);
+    if (el) { el.focus(); var v = el.value; el.value = ""; el.value = v; }
+  }
+
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("[data-action='close-dialog']")) formDialog.close();
+    if (e.target.closest("[data-action='close-confirm']")) confirmDialog.close();
+    if (e.target.closest("[data-action='close-export']")) exportDialog.close();
+    var results = document.getElementById("global-search-results");
+    if (results && !results.hidden && !e.target.closest(".sr-item") && e.target.id !== "global-search-input") {
+      results.hidden = true;
+    }
+  });
+
+  /* ============ Chart tooltips ============ */
+  function showChartTooltip(bar, x, y) {
+    var tt = document.getElementById("chart-tooltip");
+    if (!tt || !bar) return;
+    var cat = bar.getAttribute("data-tt-cat") || "";
+    var series = bar.getAttribute("data-tt-series") || "";
+    var value = bar.getAttribute("data-tt-value") || "";
+    tt.innerHTML = "";
+    var valEl = document.createElement("div");
+    valEl.className = "tt-val";
+    valEl.textContent = value;
+    var subEl = document.createElement("div");
+    subEl.className = "tt-sub";
+    subEl.textContent = series + " · " + cat;
+    tt.appendChild(valEl);
+    tt.appendChild(subEl);
+    tt.style.left = x + "px";
+    tt.style.top = (y - 10) + "px";
+    tt.classList.add("show");
+  }
+  function hideChartTooltip() {
+    var tt = document.getElementById("chart-tooltip");
+    if (tt) tt.classList.remove("show");
+  }
+  document.addEventListener("pointerover", function (e) {
+    var bar = e.target.closest && e.target.closest(".bar");
+    if (!bar) return;
+    var rect = bar.getBoundingClientRect();
+    showChartTooltip(bar, rect.left + rect.width / 2, rect.top);
+  });
+  document.addEventListener("pointermove", function (e) {
+    var bar = e.target.closest && e.target.closest(".bar");
+    if (!bar) return;
+    var tt = document.getElementById("chart-tooltip");
+    if (tt && tt.classList.contains("show")) { tt.style.left = e.clientX + "px"; tt.style.top = (e.clientY - 14) + "px"; }
+  });
+  document.addEventListener("pointerout", function (e) {
+    var bar = e.target.closest && e.target.closest(".bar");
+    if (!bar) return;
+    hideChartTooltip();
+  });
+  document.addEventListener("focusin", function (e) {
+    var bar = e.target.closest && e.target.closest(".bar");
+    if (!bar) return;
+    var rect = bar.getBoundingClientRect();
+    showChartTooltip(bar, rect.left + rect.width / 2, rect.top);
+  });
+  document.addEventListener("focusout", function (e) {
+    var bar = e.target.closest && e.target.closest(".bar");
+    if (!bar) return;
+    hideChartTooltip();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "/") return;
+    var ae = document.activeElement;
+    var tag = ae && ae.tagName;
+    var typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (ae && ae.isContentEditable);
+    var dialogOpen = (formDialog && formDialog.open) || (confirmDialog && confirmDialog.open) || (exportDialog && exportDialog.open);
+    if (typing || dialogOpen) return;
+    e.preventDefault();
+    var input = document.getElementById("global-search-input");
+    if (input) input.focus();
+  });
+
+  /* ============ Export ============ */
+  function showExportStatus(msg, isError) {
+    var el = document.getElementById("export-status");
+    if (el) { el.textContent = msg; el.style.color = isError ? "var(--danger)" : "var(--success)"; }
+  }
+  function doExportJson() {
+    try {
+      var payload = JSON.stringify(state, null, 2);
+      var blob = new Blob([payload], { type: "application/json" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "carteira-clientes-" + todayISO() + ".json";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      showExportStatus("Ficheiro descarregado.", false);
+    } catch (e) {
+      showExportStatus("Não foi possível descarregar.", true);
+    }
+  }
+
+  /* ============ Boot ============ */
+  document.addEventListener("DOMContentLoaded", function () {
+    formDialog = document.getElementById("form-dialog");
+    confirmDialog = document.getElementById("confirm-dialog");
+    exportDialog = document.getElementById("export-dialog");
+    var exportJsonBtn = document.getElementById("export-json-btn");
+    if (exportJsonBtn) exportJsonBtn.addEventListener("click", doExportJson);
+    route = parseHash();
+    lastPage = route.page;
+    init();
+  });
+})();
+</script>
