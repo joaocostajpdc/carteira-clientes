@@ -485,6 +485,10 @@
     <button class="btn btn-primary" id="export-json-btn">⭳ Descarregar cópia (.json)</button>
     <div id="export-status" style="margin-top:10px;font-size:12.5px;"></div>
     <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--sand);">
+      <p style="margin:0 0 12px;color:var(--ink-muted);font-size:13.5px;">Importação única do plano de voltas (Voltas 1, 2 e 3) enviado por ti — define a volta e as visitas/mês em 26 clientes já identificados.</p>
+      <button class="btn" id="apply-volta-plan-btn">📋 Aplicar plano de voltas (importação)</button>
+    </div>
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--sand);">
       <p style="margin:0 0 12px;color:var(--ink-muted);font-size:13.5px;">Recomendamos descarregar uma cópia acima antes de continuar. Esta ação apaga permanentemente todas as encomendas e todos os orçamentos — os clientes e as visitas não são afetados.</p>
       <button class="btn btn-danger" id="clear-orders-quotes-btn">🗑 Limpar encomendas e orçamentos</button>
     </div>
@@ -1303,6 +1307,47 @@
   }
 
   /* ============ Voltas ============ */
+  var IMPORT_VOLTA_PLAN = [
+    { id: "cli_imp_8", volta: "1", freq: 4 },
+    { id: "cli_imp_9", volta: "1", freq: 4 },
+    { id: "cli_imp_65", volta: "1", freq: 4 },
+    { id: "cli_imp_55", volta: "1", freq: 2 },
+    { id: "cli_imp_29", volta: "1", freq: 2 },
+    { id: "cli_imp_59", volta: "1", freq: 3 },
+    { id: "cli_imp_57", volta: "1", freq: 4 },
+    { id: "cli_imp_56", volta: "1", freq: 4 },
+    { id: "cli_imp_48", volta: "1", freq: 4 },
+    { id: "cli_imp_47", volta: "1", freq: 4 },
+    { id: "cli_imp_7", volta: "1", freq: 4 },
+    { id: "cli_imp_5", volta: "2", freq: 4 },
+    { id: "cli_imp_60", volta: "2", freq: 2 },
+    { id: "cli_imp_23", volta: "2", freq: 3 },
+    { id: "cli_imp_22", volta: "2", freq: 4 },
+    { id: "cli_imp_44", volta: "2", freq: 2 },
+    { id: "cli_imp_10", volta: "2", freq: 4 },
+    { id: "cli_imp_24", volta: "2", freq: 2 },
+    { id: "cli_imp_30", volta: "2", freq: 4 },
+    { id: "cli_imp_18", volta: "2", freq: 1 },
+    { id: "cli_imp_21", volta: "2", freq: 3 },
+    { id: "cli_imp_62", volta: "3", freq: 2 },
+    { id: "cli_imp_12", volta: "3", freq: 3 },
+    { id: "cli_imp_6", volta: "3", freq: 2 },
+    { id: "cli_imp_61", volta: "3", freq: 3 },
+    { id: "cli_imp_63", volta: "3", freq: 3 }
+  ];
+  function applyVoltaPlanImport() {
+    var applied = 0, skipped = 0;
+    IMPORT_VOLTA_PLAN.forEach(function (item) {
+      var c = clientById(item.id);
+      if (!c) { skipped++; return; }
+      c.volta = item.volta;
+      c.visitFreq = item.freq;
+      applied++;
+    });
+    if (exportDialog && exportDialog.open) exportDialog.close();
+    scheduleSave(); navigate("/voltas"); render();
+    toast(applied + " cliente(s) atualizados" + (skipped ? ", " + skipped + " não encontrado(s)" : "") + ".");
+  }
   function routeFreqKey(zona, volta) { return zona + "||" + volta; }
   function renderVoltas() {
     var groups = {};
@@ -1754,6 +1799,14 @@
     if (exportJsonBtn) exportJsonBtn.addEventListener("click", doExportJson);
     var clearOrdersQuotesBtn = document.getElementById("clear-orders-quotes-btn");
     if (clearOrdersQuotesBtn) clearOrdersQuotesBtn.addEventListener("click", clearOrdersAndQuotes);
+    var applyVoltaPlanBtn = document.getElementById("apply-volta-plan-btn");
+    if (applyVoltaPlanBtn) applyVoltaPlanBtn.addEventListener("click", function () {
+      confirmAction(
+        "Aplicar plano de voltas",
+        "Vai definir a volta e as visitas/mês em " + IMPORT_VOLTA_PLAN.length + " clientes (Voltas 1, 2 e 3), de acordo com a lista que enviaste. Pode repetir-se sem problema.",
+        applyVoltaPlanImport
+      );
+    });
     route = parseHash();
     lastPage = route.page;
     init();
