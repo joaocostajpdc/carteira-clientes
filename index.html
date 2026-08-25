@@ -347,6 +347,7 @@
   .volta-client-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 0; border-bottom: 1px solid var(--sand); }
   .volta-client-row:last-child { border-bottom: none; }
   .volta-client-row .volta-client-chip { min-width: 140px; }
+  .volta-client-zona { color: var(--ink-muted); font-weight: 400; }
   .volta-client-chip {
     font-size: 12px; padding: 4px 10px; border-radius: 99px; background: var(--surface-2);
     border: 1px solid var(--sand); color: var(--ink); text-decoration: none;
@@ -1118,15 +1119,14 @@
     var tab = route.tab || "encomendas";
     var tabBody;
     if (tab === "encomendas") {
-      tabBody = orders.length ? tableOrders(orders, true) : emptyState("Sem encomendas para este cliente.", '<button class="btn btn-primary" data-open-form="encomenda" data-client="' + id + '">+ Nova encomenda</button>');
+      tabBody = orders.length ? tableOrders(orders, true) : emptyState("Sem encomendas para este cliente.");
     } else if (tab === "orcamentos") {
-      tabBody = quotes.length ? tableQuotes(quotes, true) : emptyState("Sem orçamentos para este cliente.", '<button class="btn btn-primary" data-open-form="orcamento" data-client="' + id + '">+ Novo orçamento</button>');
+      tabBody = quotes.length ? tableQuotes(quotes, true) : emptyState("Sem orçamentos para este cliente.");
     } else {
       tabBody = visits.length ? tableVisits(visits, true) : emptyState("Sem visitas registadas para este cliente.", '<button class="btn btn-primary" data-open-form="visita" data-client="' + id + '">+ Agendar visita</button>');
     }
 
-    var addLabel = tab === "encomendas" ? "+ Nova encomenda" : tab === "orcamentos" ? "+ Novo orçamento" : "+ Agendar visita";
-    var addKind = tab === "encomendas" ? "encomenda" : tab === "orcamentos" ? "orcamento" : "visita";
+    var showAddBtn = tab === "visitas";
 
     var openOrders = orders.filter(function (o) { return o.status !== "concluida" && o.status !== "anulada"; });
     var openOrdersValue = openOrders.reduce(function (s, o) { return s + Number(o.amount || 0); }, 0);
@@ -1146,10 +1146,11 @@
           (c.comercial ? "<span>Comercial: " + escapeHtml(c.comercial) + "</span>" : "") +
           ((c.address || c.city) ? "<span>⌂ " + escapeHtml([c.address, c.postalCode, c.city].filter(Boolean).join(", ")) + "</span>" : "") +
         "</div>" +
-        (c.notes ? '<div class="client-notes">' + escapeHtml(c.notes) + "</div>" : "") +
       "</div></div>" +
       '<div class="head-actions"><button class="btn" data-open-form="cliente" data-id="' + c.id + '">Editar</button><button class="btn btn-danger" data-del="cliente" data-id="' + c.id + '">Eliminar</button></div>' +
       "</div>" +
+      '<div class="panel" style="margin-bottom:20px;"><div class="panel-head"><h2 style="font-size:14px;">Notas</h2></div>' +
+        '<div class="panel-body pad"><textarea class="input" data-client-notes="' + c.id + '" placeholder="Notas sobre este cliente…" rows="3">' + escapeHtml(c.notes || "") + "</textarea></div></div>" +
       '<div class="stat-grid" style="margin-bottom:20px;">' +
         statCard("Encomendas em aberto", openOrders.length, openOrders.length ? fmtMoney(openOrdersValue) + " por concluir" : "nenhuma") +
         statCard("Orçamentos em aberto", openQuotes.length, openQuotes.length ? "por decidir" : "nenhum") +
@@ -1161,7 +1162,7 @@
         '<button class="' + (tab === "visitas" ? "active" : "") + '" data-client-tab="visitas">Visitas (' + visits.length + ")</button>" +
       "</div>" +
       '<div class="panel"><div class="panel-head"><h2 style="font-size:14px;">' + (tab === "encomendas" ? "Encomendas" : tab === "orcamentos" ? "Orçamentos" : "Visitas") + '</h2>' +
-      '<button class="btn btn-sm btn-primary" data-open-form="' + addKind + '" data-client="' + id + '">' + addLabel + "</button></div>" +
+      (showAddBtn ? '<button class="btn btn-sm btn-primary" data-open-form="visita" data-client="' + id + '">+ Agendar visita</button>' : "") + "</div>" +
       '<div class="panel-body">' + tabBody + "</div></div>"
     );
   }
@@ -1209,7 +1210,7 @@
 
     return (
       '<div class="page-head"><div><h1>Encomendas</h1><div class="sub">' + state.orders.length + " no total</div></div>" +
-      '<div class="head-actions"><button class="btn btn-primary" data-open-form="encomenda">+ Nova encomenda</button></div></div>' +
+      '<div class="head-actions"><button class="btn" id="export-orders-csv-btn">⭳ Exportar encomendas</button></div></div>' +
       '<div class="search-row"><input class="input search-input" id="order-search" placeholder="Pesquisar por cliente, descrição, doc. ou material…" value="' + escapeHtml(orderFilter.q) + '">' +
       '<select class="input filter-input" id="order-status-filter"><option value="">Todos os estados</option>' + Object.keys(ORDER_STATUS).map(function (k) { return '<option value="' + k + '"' + (orderFilter.status === k ? " selected" : "") + ">" + ORDER_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
       '<div class="panel"><div class="panel-body">' + (list.length ? tableOrders(list, false, true) : emptyState("Sem encomendas para mostrar.")) + "</div></div>"
@@ -1257,7 +1258,7 @@
 
     return (
       '<div class="page-head"><div><h1>Orçamentos</h1><div class="sub">' + state.quotes.length + " no total</div></div>" +
-      '<div class="head-actions"><button class="btn btn-primary" data-open-form="orcamento">+ Novo orçamento</button></div></div>' +
+      '<div class="head-actions"><button class="btn" id="export-quotes-csv-btn">⭳ Exportar orçamentos</button></div></div>' +
       '<div class="search-row"><input class="input search-input" id="quote-search" placeholder="Pesquisar por cliente, descrição, material ou nº…" value="' + escapeHtml(quoteFilter.q) + '">' +
       '<select class="input filter-input" id="quote-status-filter"><option value="">Todos os estados</option>' + Object.keys(QUOTE_STATUS).map(function (k) { return '<option value="' + k + '"' + (quoteFilter.status === k ? " selected" : "") + ">" + QUOTE_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
       '<div class="panel"><div class="panel-body">' + (list.length ? tableQuotes(list, false, true) : emptyState("Sem orçamentos para mostrar.")) + "</div></div>"
@@ -1352,51 +1353,47 @@
   function renderVoltas() {
     var groups = {};
     state.clients.forEach(function (c) {
-      var z = (c.zona || "").trim() || "Sem zona";
       var v = (c.volta || "").trim() || "Sem volta";
-      groups[z] = groups[z] || {};
-      groups[z][v] = groups[z][v] || [];
-      groups[z][v].push(c);
+      groups[v] = groups[v] || [];
+      groups[v].push(c);
     });
-    var zonas = Object.keys(groups).sort(function (a, b) { return a.localeCompare(b, "pt"); });
+    var voltas = Object.keys(groups).sort(function (a, b) {
+      if (a === "Sem volta") return 1;
+      if (b === "Sem volta") return -1;
+      return a.localeCompare(b, "pt", { numeric: true });
+    });
     var monthKey = todayISO().slice(0, 7);
 
-    var html = '<div class="page-head"><div><h1>Voltas</h1><div class="sub">Planeamento de visitas por zona e volta — cada cliente tem a sua própria meta de visitas por mês</div></div></div>';
+    var html = '<div class="page-head"><div><h1>Voltas</h1><div class="sub">Planeamento de visitas por volta — cada volta pode juntar clientes de zonas diferentes; cada cliente tem a sua própria meta de visitas por mês</div></div></div>';
 
-    if (!zonas.length) {
-      return html + emptyState("Ainda sem clientes com zona/volta definidas.");
+    if (!voltas.length) {
+      return html + emptyState("Ainda sem clientes com volta definida.");
     }
 
-    zonas.forEach(function (z) {
-      var voltas = Object.keys(groups[z]).sort(function (a, b) { return a.localeCompare(b, "pt", { numeric: true }); });
-      var zonaClientCount = voltas.reduce(function (s, v) { return s + groups[z][v].length; }, 0);
-      html += '<div class="panel"><div class="panel-head"><div><h2>' + escapeHtml(z) + "</h2>" +
-        '<div class="sub">' + zonaClientCount + " cliente(s) · " + voltas.length + " volta(s)</div></div></div>" +
-        '<div class="panel-body">';
-      voltas.forEach(function (v) {
-        var clients = groups[z][v].slice().sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); });
-        var voltaLabel = v === "Sem volta" ? v : "Volta " + v;
-        var withTarget = clients.filter(function (c) { return (c.visitFreq || 0) > 0; }).length;
-        html += '<div class="volta-row">' +
-          '<div class="volta-row-head">' +
-            '<div class="volta-name">' + escapeHtml(voltaLabel) + '<span class="volta-count">' + clients.length + " cliente(s)</span></div>" +
-            '<div class="volta-controls"><span class="chip chip-neutral">' + withTarget + " de " + clients.length + " com meta definida</span></div>" +
-          "</div>" +
-          '<div class="volta-client-list">' + clients.map(function (c) {
-            var freq = c.visitFreq || 0;
-            var visitsThisMonth = state.visits.filter(function (vi) {
-              return vi.status === "realizada" && vi.clientId === c.id && (vi.date || "").slice(0, 7) === monthKey;
-            }).length;
-            var progressCls = freq > 0 && visitsThisMonth >= freq ? "chip-success" : freq > 0 ? "chip-warning" : "chip-neutral";
-            return '<div class="volta-client-row">' +
-              '<a class="volta-client-chip" href="#/clientes/' + encodeURIComponent(c.id) + '">' + escapeHtml(c.name) + "</a>" +
-              '<label class="volta-freq-label">Visitas/mês <input type="number" min="0" step="1" class="input volta-freq-input" data-client-visit-freq="' + c.id + '" value="' + (freq || "") + '" placeholder="0"></label>' +
-              '<span class="chip ' + progressCls + '">' + visitsThisMonth + (freq ? " / " + freq : "") + " este mês</span>" +
-            "</div>";
-          }).join("") + "</div>" +
-        "</div>";
+    voltas.forEach(function (v) {
+      var clients = groups[v].slice().sort(function (a, b) {
+        return (a.zona || "").localeCompare(b.zona || "", "pt") || a.name.localeCompare(b.name, "pt");
       });
-      html += "</div></div>";
+      var voltaLabel = v === "Sem volta" ? v : "Volta " + v;
+      var withTarget = clients.filter(function (c) { return (c.visitFreq || 0) > 0; }).length;
+      html += '<div class="panel"><div class="panel-head"><div><h2>' + escapeHtml(voltaLabel) + "</h2>" +
+        '<div class="sub">' + clients.length + " cliente(s)</div></div>" +
+        '<span class="chip chip-neutral">' + withTarget + " de " + clients.length + " com meta definida</span>" +
+        "</div>" +
+        '<div class="panel-body"><div class="volta-client-list">' + clients.map(function (c) {
+          var freq = c.visitFreq || 0;
+          var visitsThisMonth = state.visits.filter(function (vi) {
+            return vi.status === "realizada" && vi.clientId === c.id && (vi.date || "").slice(0, 7) === monthKey;
+          }).length;
+          var progressCls = freq > 0 && visitsThisMonth >= freq ? "chip-success" : freq > 0 ? "chip-warning" : "chip-neutral";
+          return '<div class="volta-client-row">' +
+            '<a class="volta-client-chip" href="#/clientes/' + encodeURIComponent(c.id) + '">' + escapeHtml(c.name) +
+              (c.zona ? ' <span class="volta-client-zona">· ' + escapeHtml(c.zona) + "</span>" : "") + "</a>" +
+            '<label class="volta-freq-label">Visitas/mês <input type="number" min="0" step="1" class="input volta-freq-input" data-client-visit-freq="' + c.id + '" value="' + (freq || "") + '" placeholder="0"></label>' +
+            '<span class="chip ' + progressCls + '">' + visitsThisMonth + (freq ? " / " + freq : "") + " este mês</span>" +
+          "</div>";
+        }).join("") + "</div></div>" +
+      "</div>";
     });
 
     return html;
@@ -1689,6 +1686,20 @@
         scheduleSave(); render();
       });
     });
+    var exportOrdersCsvBtn = document.getElementById("export-orders-csv-btn");
+    if (exportOrdersCsvBtn) exportOrdersCsvBtn.addEventListener("click", doExportOrdersCsv);
+    var exportQuotesCsvBtn = document.getElementById("export-quotes-csv-btn");
+    if (exportQuotesCsvBtn) exportQuotesCsvBtn.addEventListener("click", doExportQuotesCsv);
+    content.querySelectorAll("[data-client-notes]").forEach(function (el) {
+      el.addEventListener("change", function (e) {
+        var id = el.getAttribute("data-client-notes");
+        var c = clientById(id);
+        if (!c) return;
+        c.notes = e.target.value;
+        scheduleSave();
+        toast("Notas guardadas.");
+      });
+    });
   }
   function restoreFocus(id) {
     var el = document.getElementById(id);
@@ -1774,6 +1785,44 @@
   function showExportStatus(msg, isError) {
     var el = document.getElementById("export-status");
     if (el) { el.textContent = msg; el.style.color = isError ? "var(--danger)" : "var(--success)"; }
+  }
+  function toCsvValue(v) {
+    var s = v === null || v === undefined ? "" : String(v);
+    if (/[",\n;]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  function downloadCsv(filename, rows) {
+    var csv = rows.map(function (r) { return r.map(toCsvValue).join(";"); }).join("\r\n");
+    var blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  function doExportOrdersCsv() {
+    var rows = [["Cliente", "Nº Documento", "Descrição", "Material", "Estado doc.", "Estado", "Valor", "Data", "Data limite"]];
+    state.orders.forEach(function (o) {
+      rows.push([
+        clientName(o.clientId), o.documentNumber || "", o.description || "", o.materialType || "",
+        o.docStatus || "", (ORDER_STATUS[o.status] && ORDER_STATUS[o.status].label) || o.status || "",
+        o.amount || 0, o.date || "", o.dueDate || ""
+      ]);
+    });
+    downloadCsv("encomendas-" + todayISO() + ".csv", rows);
+    toast("Encomendas exportadas (" + state.orders.length + ").");
+  }
+  function doExportQuotesCsv() {
+    var rows = [["Cliente", "Nº", "Descrição", "Material", "Referência cliente", "Comercial", "Estado", "Valor", "Data", "Válido até"]];
+    state.quotes.forEach(function (q) {
+      rows.push([
+        clientName(q.clientId), q.number || "", q.description || "", q.materialType || "", q.clientRef || "",
+        q.comercial || "", (QUOTE_STATUS[q.status] && QUOTE_STATUS[q.status].label) || q.status || "",
+        q.amount || 0, q.date || "", q.validUntil || ""
+      ]);
+    });
+    downloadCsv("orcamentos-" + todayISO() + ".csv", rows);
+    toast("Orçamentos exportados (" + state.quotes.length + ").");
   }
   function doExportJson() {
     try {
