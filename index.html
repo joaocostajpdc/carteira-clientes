@@ -343,6 +343,10 @@
   .volta-freq-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-muted); white-space: nowrap; }
   .volta-freq-input { width: 56px; padding: 4px 6px; text-align: center; }
   .volta-clients { display: flex; flex-wrap: wrap; gap: 6px; }
+  .volta-client-list { display: flex; flex-direction: column; gap: 4px; }
+  .volta-client-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 0; border-bottom: 1px solid var(--sand); }
+  .volta-client-row:last-child { border-bottom: none; }
+  .volta-client-row .volta-client-chip { min-width: 140px; }
   .volta-client-chip {
     font-size: 12px; padding: 4px 10px; border-radius: 99px; background: var(--surface-2);
     border: 1px solid var(--sand); color: var(--ink); text-decoration: none;
@@ -1134,6 +1138,7 @@
           (c.email ? "<span>✉ " + escapeHtml(c.email) + "</span>" : "") +
           (c.phone ? '<span class="mono">☎ ' + escapeHtml(c.phone) + "</span>" : "") +
           (c.zona ? "<span>📍 " + escapeHtml(c.zona) + (c.volta ? " · Volta " + escapeHtml(c.volta) : "") + "</span>" : "") +
+          (c.visitFreq ? "<span>🔁 " + c.visitFreq + " visita(s)/mês</span>" : "") +
           (c.comercial ? "<span>Comercial: " + escapeHtml(c.comercial) + "</span>" : "") +
           ((c.address || c.city) ? "<span>⌂ " + escapeHtml([c.address, c.postalCode, c.city].filter(Boolean).join(", ")) + "</span>" : "") +
         "</div>" +
@@ -1311,7 +1316,7 @@
     var zonas = Object.keys(groups).sort(function (a, b) { return a.localeCompare(b, "pt"); });
     var monthKey = todayISO().slice(0, 7);
 
-    var html = '<div class="page-head"><div><h1>Voltas</h1><div class="sub">Planeamento de visitas por zona e volta — define quantas vezes por mês visitar cada volta</div></div></div>';
+    var html = '<div class="page-head"><div><h1>Voltas</h1><div class="sub">Planeamento de visitas por zona e volta — cada cliente tem a sua própria meta de visitas por mês</div></div></div>';
 
     if (!zonas.length) {
       return html + emptyState("Ainda sem clientes com zona/volta definidas.");
@@ -1324,25 +1329,25 @@
         '<div class="sub">' + zonaClientCount + " cliente(s) · " + voltas.length + " volta(s)</div></div></div>" +
         '<div class="panel-body">';
       voltas.forEach(function (v) {
-        var clients = groups[z][v];
-        var key = routeFreqKey(z, v);
-        var freq = state.routeFreq[key] || 0;
-        var clientIds = clients.map(function (c) { return c.id; });
-        var visitsThisMonth = state.visits.filter(function (vi) {
-          return vi.status === "realizada" && (vi.date || "").slice(0, 7) === monthKey && clientIds.indexOf(vi.clientId) !== -1;
-        }).length;
-        var progressCls = freq > 0 && visitsThisMonth >= freq ? "chip-success" : freq > 0 ? "chip-warning" : "chip-neutral";
+        var clients = groups[z][v].slice().sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); });
         var voltaLabel = v === "Sem volta" ? v : "Volta " + v;
+        var withTarget = clients.filter(function (c) { return (c.visitFreq || 0) > 0; }).length;
         html += '<div class="volta-row">' +
           '<div class="volta-row-head">' +
             '<div class="volta-name">' + escapeHtml(voltaLabel) + '<span class="volta-count">' + clients.length + " cliente(s)</span></div>" +
-            '<div class="volta-controls">' +
-              '<label class="volta-freq-label">Visitas/mês <input type="number" min="0" step="1" class="input volta-freq-input" data-route-freq="' + escapeHtml(key) + '" value="' + (freq || "") + '" placeholder="0"></label>' +
-              '<span class="chip ' + progressCls + '">' + visitsThisMonth + (freq ? " / " + freq : "") + " este mês</span>" +
-            "</div>" +
+            '<div class="volta-controls"><span class="chip chip-neutral">' + withTarget + " de " + clients.length + " com meta definida</span></div>" +
           "</div>" +
-          '<div class="volta-clients">' + clients.map(function (c) {
-            return '<a class="volta-client-chip" href="#/clientes/' + encodeURIComponent(c.id) + '">' + escapeHtml(c.name) + "</a>";
+          '<div class="volta-client-list">' + clients.map(function (c) {
+            var freq = c.visitFreq || 0;
+            var visitsThisMonth = state.visits.filter(function (vi) {
+              return vi.status === "realizada" && vi.clientId === c.id && (vi.date || "").slice(0, 7) === monthKey;
+            }).length;
+            var progressCls = freq > 0 && visitsThisMonth >= freq ? "chip-success" : freq > 0 ? "chip-warning" : "chip-neutral";
+            return '<div class="volta-client-row">' +
+              '<a class="volta-client-chip" href="#/clientes/' + encodeURIComponent(c.id) + '">' + escapeHtml(c.name) + "</a>" +
+              '<label class="volta-freq-label">Visitas/mês <input type="number" min="0" step="1" class="input volta-freq-input" data-client-visit-freq="' + c.id + '" value="' + (freq || "") + '" placeholder="0"></label>' +
+              '<span class="chip ' + progressCls + '">' + visitsThisMonth + (freq ? " / " + freq : "") + " este mês</span>" +
+            "</div>";
           }).join("") + "</div>" +
         "</div>";
       });
@@ -1374,6 +1379,7 @@
           field("Zona", '<input class="input" id="f-zona" list="dl-zonas" value="' + escapeHtml(c ? c.zona : "") + '">' + datalistHtml("dl-zonas", KNOWN_ZONAS)) +
           field("Volta", '<input class="input" id="f-volta" placeholder="Ex.: 1, 2…" value="' + escapeHtml(c ? c.volta : "") + '">') +
         "</div>" +
+        field("Visitas/mês", '<input class="input" type="number" min="0" step="1" id="f-visitfreq" placeholder="Ex.: 1" value="' + (c && c.visitFreq ? c.visitFreq : "") + '">') +
         '<div class="field-row">' +
           field("Estado", '<select class="input" id="f-status">' + selectOptions(CLIENT_STATUS, c ? c.status : "ativo") + "</select>") +
           field("Comercial", '<input class="input" id="f-comercial" list="dl-comerciais" value="' + escapeHtml(c ? c.comercial : "") + '">' + datalistHtml("dl-comerciais", KNOWN_COMERCIAIS)) +
@@ -1473,6 +1479,7 @@
     if (!c) { c = { id: uid("cli"), createdAt: new Date().toISOString() }; state.clients.push(c); }
     c.name = name; c.email = val("f-email"); c.phone = val("f-phone"); c.nif = val("f-nif");
     c.number = val("f-number"); c.zona = val("f-zona"); c.volta = val("f-volta");
+    c.visitFreq = parseInt(val("f-visitfreq"), 10) || 0;
     c.status = val("f-status"); c.comercial = val("f-comercial"); c.plafond = parseFloat(val("f-plafond")) || 0;
     c.postalCode = val("f-postal"); c.address = val("f-address"); c.city = val("f-city"); c.notes = val("f-notes");
     scheduleSave(); render();
@@ -1624,6 +1631,16 @@
         var key = el.getAttribute("data-route-freq");
         var n = parseInt(e.target.value, 10);
         if (n > 0) state.routeFreq[key] = n; else delete state.routeFreq[key];
+        scheduleSave(); render();
+      });
+    });
+    content.querySelectorAll("[data-client-visit-freq]").forEach(function (el) {
+      el.addEventListener("change", function (e) {
+        var id = el.getAttribute("data-client-visit-freq");
+        var c = clientById(id);
+        if (!c) return;
+        var n = parseInt(e.target.value, 10);
+        c.visitFreq = n > 0 ? n : 0;
         scheduleSave(); render();
       });
     });
