@@ -480,6 +480,10 @@
     <p style="margin:0 0 16px;color:var(--ink-muted);font-size:13.5px;">Descarregue uma cópia completa dos seus clientes, encomendas, orçamentos e visitas num único ficheiro — útil como salvaguarda ou para levar os dados para outro sistema.</p>
     <button class="btn btn-primary" id="export-json-btn">⭳ Descarregar cópia (.json)</button>
     <div id="export-status" style="margin-top:10px;font-size:12.5px;"></div>
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--sand);">
+      <p style="margin:0 0 12px;color:var(--ink-muted);font-size:13.5px;">Recomendamos descarregar uma cópia acima antes de continuar. Esta ação apaga permanentemente todas as encomendas e todos os orçamentos — os clientes e as visitas não são afetados.</p>
+      <button class="btn btn-danger" id="clear-orders-quotes-btn">🗑 Limpar encomendas e orçamentos</button>
+    </div>
   </div>
 </dialog>
 
@@ -1549,6 +1553,20 @@
       });
     }
   }
+  function clearOrdersAndQuotes() {
+    var n = state.orders.length + state.quotes.length;
+    confirmAction(
+      "Limpar encomendas e orçamentos",
+      "Vai apagar " + state.orders.length + " encomenda(s) e " + state.quotes.length + " orçamento(s). Os clientes e as visitas não são afetados. Não é possível desfazer.",
+      function () {
+        state.orders = [];
+        state.quotes = [];
+        if (exportDialog && exportDialog.open) exportDialog.close();
+        scheduleSave(); navigate("/"); render();
+        toast(n ? "Encomendas e orçamentos apagados." : "Não havia encomendas nem orçamentos.");
+      }
+    );
+  }
 
   /* ============ Event delegation ============ */
   function bindContentActions() {
@@ -1717,6 +1735,8 @@
     exportDialog = document.getElementById("export-dialog");
     var exportJsonBtn = document.getElementById("export-json-btn");
     if (exportJsonBtn) exportJsonBtn.addEventListener("click", doExportJson);
+    var clearOrdersQuotesBtn = document.getElementById("clear-orders-quotes-btn");
+    if (clearOrdersQuotesBtn) clearOrdersQuotesBtn.addEventListener("click", clearOrdersAndQuotes);
     route = parseHash();
     lastPage = route.page;
     init();
