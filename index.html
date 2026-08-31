@@ -348,6 +348,13 @@
   .volta-client-row:last-child { border-bottom: none; }
   .volta-client-row .volta-client-chip { min-width: 140px; }
   .volta-client-zona { color: var(--ink-muted); font-weight: 400; }
+  .notes-list { display: flex; flex-direction: column; }
+  .note-row { padding: 12px 18px; border-bottom: 1px solid var(--sand); }
+  .note-row:last-child { border-bottom: none; }
+  .note-text { font-size: 13.5px; margin-bottom: 8px; white-space: pre-wrap; }
+  .note-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .note-date { font-size: 11.5px; color: var(--ink-muted); }
+  .note-status-btn { border: none; cursor: pointer; font: inherit; }
   .volta-client-chip {
     font-size: 12px; padding: 4px 10px; border-radius: 99px; background: var(--surface-2);
     border: 1px solid var(--sand); color: var(--ink); text-decoration: none;
@@ -502,7 +509,7 @@
 
 
   /* ============ State ============ */
-  var state = { clients: [], orders: [], quotes: [], visits: [], counters: { quote: 0 }, routeFreq: {} };
+  var state = { clients: [], orders: [], quotes: [], visits: [], notes: [], counters: { quote: 0 }, routeFreq: {} };
   var saveTimer = null;
   var savePending = false;
   var route = { page: "dashboard", id: null, tab: "encomendas" };
@@ -535,6 +542,12 @@
     realizada: { label: "Realizada", cls: "chip-success" },
     cancelada: { label: "Cancelada", cls: "chip-danger" }
   };
+  var NOTE_STATUS = {
+    por_tratar: { label: "Por tratar", cls: "chip-neutral" },
+    a_tratar:   { label: "A tratar",   cls: "chip-warning" },
+    concluido:  { label: "Concluído",  cls: "chip-success" }
+  };
+  var NOTE_STATUS_ORDER = ["por_tratar", "a_tratar", "concluido"];
   var KNOWN_ZONAS = ["Anha", "Arcos de Valdevez", "Barca", "Barcelos", "Espanha", "Esposende", "Lanheses", "Maia", "Melgaço", "Monção", "Neiva", "Neutro", "Paredes de Coura", "Ponte da Barca", "Ponte de Lima", "Povoa de Varzim", "Viana do Castelo", "Vila Verde"];
   var KNOWN_COMERCIAIS = ["João", "David", "Balcão", "S/ comercial"];
   var KNOWN_MATERIAIS = ["Chapas Lisas", "Chapas Quinadas", "Ferragens", "Mosquiteiras", "Painéis", "Portas", "Portas Pivotantes", "Portas chapeadas", "Produtos Químicos", "Vedante"];
@@ -621,6 +634,7 @@
     obj.orders = Array.isArray(obj.orders) ? obj.orders : [];
     obj.quotes = Array.isArray(obj.quotes) ? obj.quotes : [];
     obj.visits = Array.isArray(obj.visits) ? obj.visits : [];
+    obj.notes = Array.isArray(obj.notes) ? obj.notes : [];
     obj.counters = obj.counters && typeof obj.counters === "object" ? obj.counters : { quote: 0 };
     obj.counters.quote = obj.counters.quote || 0;
     obj.routeFreq = obj.routeFreq && typeof obj.routeFreq === "object" ? obj.routeFreq : {};
@@ -1115,18 +1129,26 @@
     var orders = state.orders.filter(function (o) { return o.clientId === id; }).sort(function (a, b) { return b.date.localeCompare(a.date); });
     var quotes = state.quotes.filter(function (q) { return q.clientId === id; }).sort(function (a, b) { return b.date.localeCompare(a.date); });
     var visits = state.visits.filter(function (v) { return v.clientId === id; }).sort(function (a, b) { return b.date.localeCompare(a.date); });
+    var notes = state.notes.filter(function (n) { return n.clientId === id; }).sort(function (a, b) { return (b.createdAt || "").localeCompare(a.createdAt || ""); });
 
+    var ADD_CONFIG = {
+      encomendas: { label: "+ Nova encomenda", kind: "encomenda" },
+      orcamentos: { label: "+ Novo orçamento", kind: "orcamento" },
+      visitas: { label: "+ Agendar visita", kind: "visita" },
+      notas: { label: "+ Nova nota", kind: "nota" }
+    };
     var tab = route.tab || "encomendas";
+    var addCfg = ADD_CONFIG[tab] || ADD_CONFIG.encomendas;
     var tabBody;
     if (tab === "encomendas") {
-      tabBody = orders.length ? tableOrders(orders, true) : emptyState("Sem encomendas para este cliente.");
+      tabBody = orders.length ? tableOrders(orders, true) : emptyState("Sem encomendas para este cliente.", '<button class="btn btn-primary" data-open-form="encomenda" data-client="' + id + '">+ Nova encomenda</button>');
     } else if (tab === "orcamentos") {
-      tabBody = quotes.length ? tableQuotes(quotes, true) : emptyState("Sem orçamentos para este cliente.");
+      tabBody = quotes.length ? tableQuotes(quotes, true) : emptyState("Sem orçamentos para este cliente.", '<button class="btn btn-primary" data-open-form="orcamento" data-client="' + id + '">+ Novo orçamento</button>');
+    } else if (tab === "notas") {
+      tabBody = notes.length ? renderNotesList(notes) : emptyState("Sem notas para este cliente.", '<button class="btn btn-primary" data-open-form="nota" data-client="' + id + '">+ Nova nota</button>');
     } else {
       tabBody = visits.length ? tableVisits(visits, true) : emptyState("Sem visitas registadas para este cliente.", '<button class="btn btn-primary" data-open-form="visita" data-client="' + id + '">+ Agendar visita</button>');
     }
-
-    var showAddBtn = tab === "visitas";
 
     var openOrders = orders.filter(function (o) { return o.status !== "concluida" && o.status !== "anulada"; });
     var openOrdersValue = openOrders.reduce(function (s, o) { return s + Number(o.amount || 0); }, 0);
@@ -1149,8 +1171,6 @@
       "</div></div>" +
       '<div class="head-actions"><button class="btn" data-open-form="cliente" data-id="' + c.id + '">Editar</button><button class="btn btn-danger" data-del="cliente" data-id="' + c.id + '">Eliminar</button></div>' +
       "</div>" +
-      '<div class="panel" style="margin-bottom:20px;"><div class="panel-head"><h2 style="font-size:14px;">Notas</h2></div>' +
-        '<div class="panel-body pad"><textarea class="input" data-client-notes="' + c.id + '" placeholder="Notas sobre este cliente…" rows="3">' + escapeHtml(c.notes || "") + "</textarea></div></div>" +
       '<div class="stat-grid" style="margin-bottom:20px;">' +
         statCard("Encomendas em aberto", openOrders.length, openOrders.length ? fmtMoney(openOrdersValue) + " por concluir" : "nenhuma") +
         statCard("Orçamentos em aberto", openQuotes.length, openQuotes.length ? "por decidir" : "nenhum") +
@@ -1160,11 +1180,26 @@
         '<button class="' + (tab === "encomendas" ? "active" : "") + '" data-client-tab="encomendas">Encomendas (' + orders.length + ")</button>" +
         '<button class="' + (tab === "orcamentos" ? "active" : "") + '" data-client-tab="orcamentos">Orçamentos (' + quotes.length + ")</button>" +
         '<button class="' + (tab === "visitas" ? "active" : "") + '" data-client-tab="visitas">Visitas (' + visits.length + ")</button>" +
+        '<button class="' + (tab === "notas" ? "active" : "") + '" data-client-tab="notas">Notas (' + notes.length + ")</button>" +
       "</div>" +
-      '<div class="panel"><div class="panel-head"><h2 style="font-size:14px;">' + (tab === "encomendas" ? "Encomendas" : tab === "orcamentos" ? "Orçamentos" : "Visitas") + '</h2>' +
-      (showAddBtn ? '<button class="btn btn-sm btn-primary" data-open-form="visita" data-client="' + id + '">+ Agendar visita</button>' : "") + "</div>" +
+      '<div class="panel"><div class="panel-head"><h2 style="font-size:14px;">' + (tab === "encomendas" ? "Encomendas" : tab === "orcamentos" ? "Orçamentos" : tab === "notas" ? "Notas" : "Visitas") + '</h2>' +
+      '<button class="btn btn-sm btn-primary" data-open-form="' + addCfg.kind + '" data-client="' + id + '">' + addCfg.label + "</button></div>" +
       '<div class="panel-body">' + tabBody + "</div></div>"
     );
+  }
+  function renderNotesList(notes) {
+    return '<div class="notes-list">' + notes.map(function (n) {
+      var st = NOTE_STATUS[n.status] || NOTE_STATUS.por_tratar;
+      return '<div class="note-row">' +
+        '<div class="note-text">' + escapeHtml(n.text) + "</div>" +
+        '<div class="note-meta">' +
+          (n.createdAt ? '<span class="note-date">' + escapeHtml(n.createdAt.slice(0, 10)) + "</span>" : "") +
+          '<button class="chip ' + st.cls + ' note-status-btn" data-note-cycle="' + n.id + '" type="button">' + st.label + "</button>" +
+          '<button class="btn btn-sm" data-open-form="nota" data-id="' + n.id + '">Editar</button>' +
+          '<button class="btn btn-sm btn-danger" data-del="nota" data-id="' + n.id + '">Eliminar</button>' +
+        "</div>" +
+      "</div>";
+    }).join("") + "</div>";
   }
 
   /* ============ Orders page ============ */
@@ -1492,6 +1527,11 @@
         field("Próxima visita", '<input class="input" type="date" id="f-nextvisit" value="' + (v ? v.nextVisit || "" : "") + '">') +
         field("Notas", '<textarea class="input" id="f-notes">' + escapeHtml(v ? v.notes : "") + "</textarea>");
       footHtml = formFooter(function () { saveVisit(id); });
+    } else if (kind === "nota") {
+      var n = id ? state.notes.find(function (x) { return x.id === id; }) : null;
+      title = n ? "Editar nota" : "Nova nota";
+      bodyHtml = field("Nota", '<textarea class="input" id="f-notetext" rows="4" placeholder="Escreve aqui a nota…">' + escapeHtml(n ? n.text : "") + "</textarea>", true);
+      footHtml = formFooter(function () { return saveNote(id, presetClientId); });
     }
 
     document.getElementById("form-dialog-title").textContent = title;
@@ -1563,6 +1603,15 @@
     scheduleSave(); render();
     toast(id ? "Visita atualizada." : "Visita agendada.");
   }
+  function saveNote(id, presetClientId) {
+    var text = val("f-notetext");
+    if (!text) { toast("Escreve o texto da nota.", "error"); return false; }
+    var n = id ? state.notes.find(function (x) { return x.id === id; }) : null;
+    if (!n) { n = { id: uid("nota"), clientId: presetClientId, status: "por_tratar", createdAt: new Date().toISOString() }; state.notes.push(n); }
+    n.text = text;
+    scheduleSave(); render();
+    toast(id ? "Nota atualizada." : "Nota criada.");
+  }
 
   /* ============ Delete / confirm ============ */
   function confirmAction(title, message, onOk) {
@@ -1577,12 +1626,14 @@
     if (kind === "cliente") {
       var relatedCount = state.orders.filter(function (o) { return o.clientId === id; }).length +
         state.quotes.filter(function (q) { return q.clientId === id; }).length +
-        state.visits.filter(function (v) { return v.clientId === id; }).length;
-      confirmAction("Eliminar cliente", "Esta ação remove o cliente" + (relatedCount ? " e os " + relatedCount + " registo(s) associados (encomendas, orçamentos e visitas)" : "") + ". Não é possível desfazer.", function () {
+        state.visits.filter(function (v) { return v.clientId === id; }).length +
+        state.notes.filter(function (n) { return n.clientId === id; }).length;
+      confirmAction("Eliminar cliente", "Esta ação remove o cliente" + (relatedCount ? " e os " + relatedCount + " registo(s) associados (encomendas, orçamentos, visitas e notas)" : "") + ". Não é possível desfazer.", function () {
         state.clients = state.clients.filter(function (c) { return c.id !== id; });
         state.orders = state.orders.filter(function (o) { return o.clientId !== id; });
         state.quotes = state.quotes.filter(function (q) { return q.clientId !== id; });
         state.visits = state.visits.filter(function (v) { return v.clientId !== id; });
+        state.notes = state.notes.filter(function (n) { return n.clientId !== id; });
         scheduleSave(); navigate("/clientes"); toast("Cliente eliminado.");
       });
     } else if (kind === "encomenda") {
@@ -1600,7 +1651,19 @@
         state.visits = state.visits.filter(function (v) { return v.id !== id; });
         scheduleSave(); render(); toast("Visita eliminada.");
       });
+    } else if (kind === "nota") {
+      confirmAction("Eliminar nota", "Não é possível desfazer esta ação.", function () {
+        state.notes = state.notes.filter(function (n) { return n.id !== id; });
+        scheduleSave(); render(); toast("Nota eliminada.");
+      });
     }
+  }
+  function cycleNoteStatus(id) {
+    var n = state.notes.find(function (x) { return x.id === id; });
+    if (!n) return;
+    var idx = NOTE_STATUS_ORDER.indexOf(n.status);
+    n.status = NOTE_STATUS_ORDER[(idx + 1) % NOTE_STATUS_ORDER.length];
+    scheduleSave(); render();
   }
   function clearOrdersAndQuotes() {
     var n = state.orders.length + state.quotes.length;
@@ -1690,14 +1753,9 @@
     if (exportOrdersCsvBtn) exportOrdersCsvBtn.addEventListener("click", doExportOrdersCsv);
     var exportQuotesCsvBtn = document.getElementById("export-quotes-csv-btn");
     if (exportQuotesCsvBtn) exportQuotesCsvBtn.addEventListener("click", doExportQuotesCsv);
-    content.querySelectorAll("[data-client-notes]").forEach(function (el) {
-      el.addEventListener("change", function (e) {
-        var id = el.getAttribute("data-client-notes");
-        var c = clientById(id);
-        if (!c) return;
-        c.notes = e.target.value;
-        scheduleSave();
-        toast("Notas guardadas.");
+    content.querySelectorAll("[data-note-cycle]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        cycleNoteStatus(el.getAttribute("data-note-cycle"));
       });
     });
   }
