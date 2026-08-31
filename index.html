@@ -1,6 +1,7 @@
 <title>Carteira de Clientes</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
     --paper: #eef2f9;
@@ -512,7 +513,7 @@
   </div>
   <div class="modal-body">
     <p id="import-dialog-desc" style="margin:0 0 16px;color:var(--ink-muted);font-size:13.5px;"></p>
-    <input type="file" id="import-file-input" class="input" accept=".csv,.xlsx,.xls">
+    <input type="file" id="import-file-input" class="input" accept=".csv,.xlsx,.xls,.pdf" multiple>
     <div id="import-status" style="margin-top:14px;font-size:12.5px;white-space:pre-wrap;"></div>
   </div>
   <div class="modal-foot">
@@ -1976,6 +1977,11 @@
     });
     return candidates.length === 1 ? candidates[0] : null;
   }
+  function findClientByNumber(rawNumber) {
+    var target = String(rawNumber === null || rawNumber === undefined ? "" : rawNumber).trim();
+    if (!target) return null;
+    return state.clients.find(function (c) { return String(c.number || "").trim() === target; }) || null;
+  }
   function matchStatusKey(raw, statusObj, fallbackKey) {
     var target = normText(raw);
     if (!target) return fallbackKey;
@@ -2040,17 +2046,67 @@
     var label = kind === "encomenda" ? "encomendas" : "orçamentos";
     document.getElementById("import-dialog-title").textContent = "Importar " + label;
     document.getElementById("import-dialog-desc").textContent = importCtx.clientId
-      ? "Escolhe um ficheiro .csv ou .xlsx com " + label + " — todas as linhas são associadas a este cliente (a coluna Cliente, se existir, é ignorada)."
-      : "Escolhe um ficheiro .csv ou .xlsx com " + label + ". Precisa de uma coluna \"Cliente\" com o nome exatamente (ou quase) como está na app.";
+      ? "Escolhe um ou mais PDFs (um documento por " + (kind === "encomenda" ? "encomenda" : "orçamento") + "), ou um único ficheiro .csv/.xlsx — tudo é associado a este cliente."
+      : "Escolhe um ou mais PDFs (um documento por " + (kind === "encomenda" ? "encomenda" : "orçamento") + ", a app lê o nº de cliente e o nome automaticamente), ou um único ficheiro .csv/.xlsx com uma coluna \"Cliente\".";
     document.getElementById("import-file-input").value = "";
     document.getElementById("import-status").textContent = "";
     importDialog.showModal();
   }
+  function isPdfFile(file) {
+    return /\.pdf$/i.test(file.name || "");
+  }
+  function pushOrderRecord(fields, clientId) {
+    var o = { id: uid("ord"), createdAt: new Date().toISOString(), clientId: clientId };
+    o.documentNumber = String(fields.documentNumber || "").trim();
+    o.materialType = String(fields.materialType || "").trim();
+    o.docStatus = matchStatusKey(fields.docStatus, ORDER_DOC_STATUS, "");
+    o.description = String(fields.description || "").trim();
+    o.status = matchStatusKey(fields.status, ORDER_STATUS, "pendente");
+    o.date = parseDateCell(fields.date) || todayISO();
+    o.dueDate = parseDateCell(fields.dueDate);
+    o.amount = parseMoneyCell(fields.amount);
+    o.notes = String(fields.notes || "").trim();
+    if (!o.description && !o.amount && !o.documentNumber) return false;
+    state.orders.push(o);
+    return true;
+  }
+  function pushQuoteRecord(fields, clientId) {
+    var q = { id: uid("orc"), createdAt: new Date().toISOString(), clientId: clientId };
+    var num = String(fields.number || "").trim();
+    if (num) { q.number = num; } else { state.counters.quote++; q.number = new Date().getFullYear() + "/" + state.counters.quote; }
+    q.materialType = String(fields.materialType || "").trim();
+    q.clientRef = String(fields.clientRef || "").trim();
+    q.description = String(fields.description || "").trim();
+    q.amount = parseMoneyCell(fields.amount);
+    q.status = matchStatusKey(fields.status, QUOTE_STATUS, "rascunho");
+    q.date = parseDateCell(fields.date) || todayISO();
+    q.comercial = String(fields.comercial || "").trim();
+    q.notes = String(fields.notes || "").trim();
+    if (!q.description && !q.amount) return false;
+    state.quotes.push(q);
+    return true;
+  }
   function runImport() {
     var fileInput = document.getElementById("import-file-input");
-    var file = fileInput.files && fileInput.files[0];
+    var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
     var statusEl = document.getElementById("import-status");
-    if (!file) { statusEl.textContent = "Escolhe primeiro um ficheiro."; return; }
+    if (!files.length) { statusEl.textContent = "Escolhe primeiro um ficheiro."; return; }
+    var pdfFiles = files.filter(isPdfFile);
+    var otherFiles = files.filter(function (f) { return !isPdfFile(f); });
+    if (pdfFiles.length && otherFiles.length) {
+      statusEl.textContent = "Escolhe ou vários PDFs, ou um único ficheiro .csv/.xlsx — não misturado.";
+      return;
+    }
+    if (pdfFiles.length) {
+      statusEl.textContent = "A processar " + pdfFiles.length + " PDF(s)…";
+      processPdfFiles(pdfFiles, statusEl);
+      return;
+    }
+    if (otherFiles.length > 1) {
+      statusEl.textContent = "Para .csv/.xlsx escolhe apenas um ficheiro de cada vez.";
+      return;
+    }
+    var file = otherFiles[0];
     statusEl.textContent = "A processar…";
     var ext = (file.name.split(".").pop() || "").toLowerCase();
     var reader = new FileReader();
@@ -2099,36 +2155,21 @@
         if (!client) { unmatched[String(rawName).trim()] = true; return; }
       }
       if (!client) return;
+      var ok;
       if (kind === "encomenda") {
-        var o = { id: uid("ord"), createdAt: new Date().toISOString(), clientId: client.id };
-        o.documentNumber = String(get("documentNumber") || "").trim();
-        o.materialType = String(get("materialType") || "").trim();
-        o.docStatus = matchStatusKey(get("docStatus"), ORDER_DOC_STATUS, "");
-        o.description = String(get("description") || "").trim();
-        o.status = matchStatusKey(get("status"), ORDER_STATUS, "pendente");
-        o.date = parseDateCell(get("date")) || todayISO();
-        o.dueDate = parseDateCell(get("dueDate"));
-        o.amount = parseMoneyCell(get("amount"));
-        o.notes = String(get("notes") || "").trim();
-        if (!o.description && !o.amount && !o.documentNumber) return;
-        state.orders.push(o);
-        imported++;
+        ok = pushOrderRecord({
+          documentNumber: get("documentNumber"), materialType: get("materialType"), docStatus: get("docStatus"),
+          description: get("description"), status: get("status"), date: get("date"), dueDate: get("dueDate"),
+          amount: get("amount"), notes: get("notes")
+        }, client.id);
       } else {
-        var q = { id: uid("orc"), createdAt: new Date().toISOString(), clientId: client.id };
-        var num = String(get("number") || "").trim();
-        if (num) { q.number = num; } else { state.counters.quote++; q.number = new Date().getFullYear() + "/" + state.counters.quote; }
-        q.materialType = String(get("materialType") || "").trim();
-        q.clientRef = String(get("clientRef") || "").trim();
-        q.description = String(get("description") || "").trim();
-        q.amount = parseMoneyCell(get("amount"));
-        q.status = matchStatusKey(get("status"), QUOTE_STATUS, "rascunho");
-        q.date = parseDateCell(get("date")) || todayISO();
-        q.comercial = String(get("comercial") || "").trim();
-        q.notes = String(get("notes") || "").trim();
-        if (!q.description && !q.amount) return;
-        state.quotes.push(q);
-        imported++;
+        ok = pushQuoteRecord({
+          number: get("number"), materialType: get("materialType"), clientRef: get("clientRef"),
+          description: get("description"), amount: get("amount"), status: get("status"), date: get("date"),
+          comercial: get("comercial"), notes: get("notes")
+        }, client.id);
       }
+      if (ok) imported++;
     });
     if (imported) { scheduleSave(); render(); }
     var unmatchedNames = Object.keys(unmatched);
@@ -2139,6 +2180,81 @@
     }
     statusEl.textContent = summary;
     toast(imported ? imported + " registo(s) importado(s)." : "Nenhum registo importado.");
+  }
+  /* ---- PDF import (um documento por encomenda/orçamento) ---- */
+  var PDF_WORKER_SRC = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  function extractPdfLines(arrayBuffer) {
+    if (window.pdfjsLib && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_SRC;
+    }
+    return pdfjsLib.getDocument({ data: arrayBuffer }).promise.then(function (pdf) {
+      return pdf.getPage(1);
+    }).then(function (page) {
+      return page.getTextContent();
+    }).then(function (content) {
+      var rows = {};
+      content.items.forEach(function (item) {
+        var y = Math.round(item.transform[5] / 2) * 2;
+        rows[y] = rows[y] || [];
+        rows[y].push({ x: item.transform[4], str: item.str });
+      });
+      var ys = Object.keys(rows).map(Number).sort(function (a, b) { return b - a; });
+      return ys.map(function (y) {
+        return rows[y].sort(function (a, b) { return a.x - b.x; }).map(function (it) { return it.str; }).join(" ").replace(/\s+/g, " ").trim();
+      }).filter(function (l) { return l.length; });
+    });
+  }
+  function parsePdfDocFields(lines, kind) {
+    var text = lines.join("\n");
+    var fields = { clientNumber: "", clientName: "", number: "", date: "", amount: "", description: "" };
+    var headerMatch = text.match(/(\d{4}\/\d+)\s+(\d{4}-\d{2}-\d{2})/);
+    if (headerMatch) { fields.number = headerMatch[1]; fields.date = headerMatch[2]; }
+    var clientNoIdx = lines.findIndex(function (l) { return /Cliente\s*No\.?\s*\d+/i.test(l); });
+    if (clientNoIdx !== -1) {
+      var m = lines[clientNoIdx].match(/Cliente\s*No\.?\s*(\d+)/i);
+      if (m) fields.clientNumber = m[1];
+      if (lines[clientNoIdx + 1]) fields.clientName = lines[clientNoIdx + 1].trim();
+    }
+    var totalMatch = text.match(/TOTAL DOCUMENTO\s*€?\s*([\d.,]+)/i);
+    if (totalMatch) fields.amount = totalMatch[1];
+    var headIdx = lines.findIndex(function (l) { return /Descri[cç][aã]o/i.test(l) && /Quant/i.test(l); });
+    var endIdx = lines.findIndex(function (l) { return /^Observa[cç][oõ]es/i.test(l); });
+    if (headIdx !== -1) {
+      var stop = endIdx !== -1 && endIdx > headIdx ? endIdx : Math.min(headIdx + 6, lines.length);
+      fields.description = lines.slice(headIdx + 1, stop).join("; ").trim();
+    }
+    return fields;
+  }
+  function processPdfFiles(files, statusEl) {
+    var kind = importCtx.kind;
+    Promise.all(files.map(function (file) {
+      return file.arrayBuffer().then(function (buf) {
+        return extractPdfLines(buf);
+      }).then(function (lines) {
+        var fields = parsePdfDocFields(lines, kind);
+        var client = importCtx.clientId ? clientById(importCtx.clientId) : null;
+        if (!client && fields.clientNumber) client = findClientByNumber(fields.clientNumber);
+        if (!client && fields.clientName) client = findClientByName(fields.clientName);
+        if (!client) return { file: file.name, error: "cliente não reconhecido (" + (fields.clientName || fields.clientNumber || "?") + ")" };
+        var ok = kind === "encomenda"
+          ? pushOrderRecord({ documentNumber: fields.number, description: fields.description, date: fields.date, amount: fields.amount }, client.id)
+          : pushQuoteRecord({ number: fields.number, description: fields.description, date: fields.date, amount: fields.amount }, client.id);
+        if (!ok) return { file: file.name, error: "não foi possível ler os dados do documento" };
+        return { file: file.name, ok: true };
+      }).catch(function (e) {
+        return { file: file.name, error: "erro a ler o PDF (" + (e && e.message ? e.message : e) + ")" };
+      });
+    })).then(function (results) {
+      var imported = results.filter(function (r) { return r.ok; }).length;
+      var failed = results.filter(function (r) { return !r.ok; });
+      if (imported) { scheduleSave(); render(); }
+      var summary = imported + " documento(s) importado(s).";
+      if (failed.length) {
+        summary += "\n\n" + failed.length + " ficheiro(s) com problema:\n" + failed.map(function (r) { return r.file + " — " + r.error; }).join("\n");
+      }
+      statusEl.textContent = summary;
+      toast(imported ? imported + " documento(s) importado(s)." : "Nenhum documento importado.");
+    });
   }
   function doExportJson() {
     try {
