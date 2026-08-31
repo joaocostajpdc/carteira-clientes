@@ -1,5 +1,6 @@
 <title>Carteira de Clientes</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --paper: #eef2f9;
@@ -355,6 +356,7 @@
   .note-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .note-date { font-size: 11.5px; color: var(--ink-muted); }
   .note-status-btn { border: none; cursor: pointer; font: inherit; }
+  .panel-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .volta-client-chip {
     font-size: 12px; padding: 4px 10px; border-radius: 99px; background: var(--surface-2);
     border: 1px solid var(--sand); color: var(--ink); text-decoration: none;
@@ -500,6 +502,22 @@
       <p style="margin:0 0 12px;color:var(--ink-muted);font-size:13.5px;">Recomendamos descarregar uma cópia acima antes de continuar. Esta ação apaga permanentemente todas as encomendas e todos os orçamentos — os clientes e as visitas não são afetados.</p>
       <button class="btn btn-danger" id="clear-orders-quotes-btn">🗑 Limpar encomendas e orçamentos</button>
     </div>
+  </div>
+</dialog>
+
+<dialog id="import-dialog">
+  <div class="modal-head">
+    <h2 id="import-dialog-title">Importar ficheiro</h2>
+    <button class="icon-btn" data-action="close-import" aria-label="Fechar">✕</button>
+  </div>
+  <div class="modal-body">
+    <p id="import-dialog-desc" style="margin:0 0 16px;color:var(--ink-muted);font-size:13.5px;"></p>
+    <input type="file" id="import-file-input" class="input" accept=".csv,.xlsx,.xls">
+    <div id="import-status" style="margin-top:14px;font-size:12.5px;white-space:pre-wrap;"></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" data-action="close-import">Cancelar</button>
+    <button class="btn btn-primary" id="import-run-btn">Importar</button>
   </div>
 </dialog>
 
@@ -1139,6 +1157,13 @@
     };
     var tab = route.tab || "encomendas";
     var addCfg = ADD_CONFIG[tab] || ADD_CONFIG.encomendas;
+    var panelActionsHtml =
+      (tab === "encomendas" || tab === "orcamentos")
+        ? '<div class="panel-head-actions">' +
+            '<button class="btn btn-sm btn-primary" data-import-open="' + addCfg.kind + '" data-client="' + id + '">📥 Importar ficheiro</button>' +
+            '<button class="btn btn-sm" data-open-form="' + addCfg.kind + '" data-client="' + id + '">' + addCfg.label + "</button>" +
+          "</div>"
+        : '<button class="btn btn-sm btn-primary" data-open-form="' + addCfg.kind + '" data-client="' + id + '">' + addCfg.label + "</button>";
     var tabBody;
     if (tab === "encomendas") {
       tabBody = orders.length ? tableOrders(orders, true) : emptyState("Sem encomendas para este cliente.", '<button class="btn btn-primary" data-open-form="encomenda" data-client="' + id + '">+ Nova encomenda</button>');
@@ -1183,7 +1208,7 @@
         '<button class="' + (tab === "notas" ? "active" : "") + '" data-client-tab="notas">Notas (' + notes.length + ")</button>" +
       "</div>" +
       '<div class="panel"><div class="panel-head"><h2 style="font-size:14px;">' + (tab === "encomendas" ? "Encomendas" : tab === "orcamentos" ? "Orçamentos" : tab === "notas" ? "Notas" : "Visitas") + '</h2>' +
-      '<button class="btn btn-sm btn-primary" data-open-form="' + addCfg.kind + '" data-client="' + id + '">' + addCfg.label + "</button></div>" +
+      panelActionsHtml + "</div>" +
       '<div class="panel-body">' + tabBody + "</div></div>"
     );
   }
@@ -1245,7 +1270,7 @@
 
     return (
       '<div class="page-head"><div><h1>Encomendas</h1><div class="sub">' + state.orders.length + " no total</div></div>" +
-      '<div class="head-actions"><button class="btn" id="export-orders-csv-btn">⭳ Exportar encomendas</button></div></div>' +
+      '<div class="head-actions"><button class="btn btn-primary" data-import-open="encomenda">📥 Importar ficheiro</button><button class="btn" id="export-orders-csv-btn">⭳ Exportar encomendas</button></div></div>' +
       '<div class="search-row"><input class="input search-input" id="order-search" placeholder="Pesquisar por cliente, descrição, doc. ou material…" value="' + escapeHtml(orderFilter.q) + '">' +
       '<select class="input filter-input" id="order-status-filter"><option value="">Todos os estados</option>' + Object.keys(ORDER_STATUS).map(function (k) { return '<option value="' + k + '"' + (orderFilter.status === k ? " selected" : "") + ">" + ORDER_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
       '<div class="panel"><div class="panel-body">' + (list.length ? tableOrders(list, false, true) : emptyState("Sem encomendas para mostrar.")) + "</div></div>"
@@ -1293,7 +1318,7 @@
 
     return (
       '<div class="page-head"><div><h1>Orçamentos</h1><div class="sub">' + state.quotes.length + " no total</div></div>" +
-      '<div class="head-actions"><button class="btn" id="export-quotes-csv-btn">⭳ Exportar orçamentos</button></div></div>' +
+      '<div class="head-actions"><button class="btn btn-primary" data-import-open="orcamento">📥 Importar ficheiro</button><button class="btn" id="export-quotes-csv-btn">⭳ Exportar orçamentos</button></div></div>' +
       '<div class="search-row"><input class="input search-input" id="quote-search" placeholder="Pesquisar por cliente, descrição, material ou nº…" value="' + escapeHtml(quoteFilter.q) + '">' +
       '<select class="input filter-input" id="quote-status-filter"><option value="">Todos os estados</option>' + Object.keys(QUOTE_STATUS).map(function (k) { return '<option value="' + k + '"' + (quoteFilter.status === k ? " selected" : "") + ">" + QUOTE_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
       '<div class="panel"><div class="panel-body">' + (list.length ? tableQuotes(list, false, true) : emptyState("Sem orçamentos para mostrar.")) + "</div></div>"
@@ -1435,7 +1460,7 @@
   }
 
   /* ============ Forms (dialogs) ============ */
-  var formDialog = null, confirmDialog = null, exportDialog = null;
+  var formDialog = null, confirmDialog = null, exportDialog = null, importDialog = null;
 
   function openForm(kind, id, presetClientId) {
     var title, bodyHtml, footHtml;
@@ -1758,6 +1783,11 @@
         cycleNoteStatus(el.getAttribute("data-note-cycle"));
       });
     });
+    content.querySelectorAll("[data-import-open]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        openImportDialog(el.getAttribute("data-import-open"), el.getAttribute("data-client") || null);
+      });
+    });
   }
   function restoreFocus(id) {
     var el = document.getElementById(id);
@@ -1768,6 +1798,7 @@
     if (e.target.closest("[data-action='close-dialog']")) formDialog.close();
     if (e.target.closest("[data-action='close-confirm']")) confirmDialog.close();
     if (e.target.closest("[data-action='close-export']")) exportDialog.close();
+    if (e.target.closest("[data-action='close-import']")) importDialog.close();
     var results = document.getElementById("global-search-results");
     if (results && !results.hidden && !e.target.closest(".sr-item") && e.target.id !== "global-search-input") {
       results.hidden = true;
@@ -1832,7 +1863,7 @@
     var ae = document.activeElement;
     var tag = ae && ae.tagName;
     var typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (ae && ae.isContentEditable);
-    var dialogOpen = (formDialog && formDialog.open) || (confirmDialog && confirmDialog.open) || (exportDialog && exportDialog.open);
+    var dialogOpen = (formDialog && formDialog.open) || (confirmDialog && confirmDialog.open) || (exportDialog && exportDialog.open) || (importDialog && importDialog.open);
     if (typing || dialogOpen) return;
     e.preventDefault();
     var input = document.getElementById("global-search-input");
@@ -1882,6 +1913,233 @@
     downloadCsv("orcamentos-" + todayISO() + ".csv", rows);
     toast("Orçamentos exportados (" + state.quotes.length + ").");
   }
+  /* ============ Import (ficheiro .csv/.xlsx) ============ */
+  var importCtx = { kind: null, clientId: null };
+  var ORDER_IMPORT_ALIASES = {
+    documentNumber: ["id documento", "documento", "doc", "no documento", "n documento", "n doc"],
+    materialType: ["tipo material", "material", "tipo"],
+    docStatus: ["estado doc", "estado documento"],
+    description: ["descricao", "desc"],
+    status: ["estado enc", "estado encomenda", "estado"],
+    dueDate: ["prev entrega", "previsao entrega", "data limite", "entrega prevista", "prev de entrega"],
+    amount: ["valor eur", "valor e", "valor"],
+    date: ["data"],
+    notes: ["nota", "notas", "observacoes"],
+    client: ["cliente"]
+  };
+  var QUOTE_IMPORT_ALIASES = {
+    number: ["n orc", "no orc", "numero orc", "n"],
+    date: ["data"],
+    materialType: ["tipo material", "material", "tipo"],
+    clientRef: ["ref cliente", "referencia cliente", "ref"],
+    description: ["descricao", "desc"],
+    amount: ["valor eur", "valor e", "valor"],
+    status: ["estado"],
+    comercial: ["comercial"],
+    notes: ["observacoes", "notas", "nota"],
+    client: ["cliente"]
+  };
+  function normText(s) {
+    return String(s === null || s === undefined ? "" : s)
+      .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
+  }
+  function normHeader(s) {
+    return normText(s).replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  function buildColMap(headerRow, aliasMap) {
+    var map = {};
+    headerRow.forEach(function (cell, idx) {
+      var h = normHeader(cell);
+      if (!h) return;
+      Object.keys(aliasMap).forEach(function (field) {
+        if (map[field] !== undefined) return;
+        if (aliasMap[field].indexOf(h) !== -1) map[field] = idx;
+      });
+    });
+    return map;
+  }
+  function locateHeaderRow(rows) {
+    for (var i = 0; i < Math.min(10, rows.length); i++) {
+      var found = (rows[i] || []).some(function (cell) { return normHeader(cell) === "cliente"; });
+      if (found) return i;
+    }
+    return 0;
+  }
+  function findClientByName(rawName) {
+    var target = normText(rawName);
+    if (!target) return null;
+    var exact = state.clients.find(function (c) { return normText(c.name) === target; });
+    if (exact) return exact;
+    var candidates = state.clients.filter(function (c) {
+      var n = normText(c.name);
+      return n.indexOf(target) !== -1 || target.indexOf(n) !== -1;
+    });
+    return candidates.length === 1 ? candidates[0] : null;
+  }
+  function matchStatusKey(raw, statusObj, fallbackKey) {
+    var target = normText(raw);
+    if (!target) return fallbackKey;
+    var found = Object.keys(statusObj).find(function (k) { return normText(statusObj[k].label) === target; });
+    return found || fallbackKey;
+  }
+  function parseDateCell(v) {
+    if (!v && v !== 0) return "";
+    if (v instanceof Date && !isNaN(v.getTime())) {
+      return v.getFullYear() + "-" + String(v.getMonth() + 1).padStart(2, "0") + "-" + String(v.getDate()).padStart(2, "0");
+    }
+    var s = String(v).trim();
+    if (!s) return "";
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    var m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if (m) {
+      var d = m[1].padStart(2, "0"), mo = m[2].padStart(2, "0"), y = m[3].length === 2 ? "20" + m[3] : m[3];
+      return y + "-" + mo + "-" + d;
+    }
+    return "";
+  }
+  function parseMoneyCell(v) {
+    if (typeof v === "number") return v;
+    var s = String(v === null || v === undefined ? "" : v).trim();
+    if (!s) return 0;
+    s = s.replace(/[€\s]/g, "");
+    if (/,\d{1,2}$/.test(s)) s = s.replace(/\./g, "").replace(",", ".");
+    else s = s.replace(/,/g, "");
+    var n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+  function csvDetectDelimiter(text) {
+    var firstLine = text.split(/\r\n|\n/)[0] || "";
+    var semi = (firstLine.match(/;/g) || []).length;
+    var comma = (firstLine.match(/,/g) || []).length;
+    return semi >= comma ? ";" : ",";
+  }
+  function parseCsvText(text) {
+    text = text.replace(/^﻿/, "");
+    var delim = csvDetectDelimiter(text);
+    var lines = text.split(/\r\n|\n/).filter(function (l) { return l.length > 0; });
+    return lines.map(function (line) {
+      var out = [], cur = "", inQuotes = false;
+      for (var i = 0; i < line.length; i++) {
+        var ch = line[i];
+        if (inQuotes) {
+          if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQuotes = false; }
+          else cur += ch;
+        } else {
+          if (ch === '"') inQuotes = true;
+          else if (ch === delim) { out.push(cur); cur = ""; }
+          else cur += ch;
+        }
+      }
+      out.push(cur);
+      return out;
+    });
+  }
+  function openImportDialog(kind, clientId) {
+    importCtx.kind = kind;
+    importCtx.clientId = clientId || null;
+    var label = kind === "encomenda" ? "encomendas" : "orçamentos";
+    document.getElementById("import-dialog-title").textContent = "Importar " + label;
+    document.getElementById("import-dialog-desc").textContent = importCtx.clientId
+      ? "Escolhe um ficheiro .csv ou .xlsx com " + label + " — todas as linhas são associadas a este cliente (a coluna Cliente, se existir, é ignorada)."
+      : "Escolhe um ficheiro .csv ou .xlsx com " + label + ". Precisa de uma coluna \"Cliente\" com o nome exatamente (ou quase) como está na app.";
+    document.getElementById("import-file-input").value = "";
+    document.getElementById("import-status").textContent = "";
+    importDialog.showModal();
+  }
+  function runImport() {
+    var fileInput = document.getElementById("import-file-input");
+    var file = fileInput.files && fileInput.files[0];
+    var statusEl = document.getElementById("import-status");
+    if (!file) { statusEl.textContent = "Escolhe primeiro um ficheiro."; return; }
+    statusEl.textContent = "A processar…";
+    var ext = (file.name.split(".").pop() || "").toLowerCase();
+    var reader = new FileReader();
+    reader.onerror = function () { statusEl.textContent = "Não foi possível ler o ficheiro."; };
+    reader.onload = function () {
+      try {
+        var rows;
+        if (ext === "csv") {
+          rows = parseCsvText(String(reader.result));
+        } else {
+          var wb = XLSX.read(reader.result, { type: "array", cellDates: true });
+          var sheet = wb.Sheets[wb.SheetNames[0]];
+          rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" });
+        }
+        processImportRows(rows, statusEl);
+      } catch (e) {
+        statusEl.textContent = "Erro a ler o ficheiro: " + (e && e.message ? e.message : e);
+      }
+    };
+    if (ext === "csv") reader.readAsText(file, "UTF-8");
+    else reader.readAsArrayBuffer(file);
+  }
+  function processImportRows(rows, statusEl) {
+    rows = rows.filter(function (r) { return r && r.some(function (cell) { return String(cell || "").trim() !== ""; }); });
+    if (!rows.length) { statusEl.textContent = "Ficheiro vazio."; return; }
+    var headerIdx = locateHeaderRow(rows);
+    var kind = importCtx.kind;
+    var aliasMap = kind === "encomenda" ? ORDER_IMPORT_ALIASES : QUOTE_IMPORT_ALIASES;
+    var colMap = buildColMap(rows[headerIdx], aliasMap);
+    if (!importCtx.clientId && colMap.client === undefined) {
+      statusEl.textContent = "Não encontrei a coluna \"Cliente\" no ficheiro. Confirma o cabeçalho ou importa a partir da ficha de um cliente.";
+      return;
+    }
+    var dataRows = rows.slice(headerIdx + 1);
+    var imported = 0;
+    var unmatched = {};
+    dataRows.forEach(function (row) {
+      var get = function (field) { return colMap[field] !== undefined ? row[colMap[field]] : ""; };
+      var client = null;
+      if (importCtx.clientId) {
+        client = clientById(importCtx.clientId);
+      } else {
+        var rawName = get("client");
+        if (!String(rawName || "").trim()) return;
+        client = findClientByName(rawName);
+        if (!client) { unmatched[String(rawName).trim()] = true; return; }
+      }
+      if (!client) return;
+      if (kind === "encomenda") {
+        var o = { id: uid("ord"), createdAt: new Date().toISOString(), clientId: client.id };
+        o.documentNumber = String(get("documentNumber") || "").trim();
+        o.materialType = String(get("materialType") || "").trim();
+        o.docStatus = matchStatusKey(get("docStatus"), ORDER_DOC_STATUS, "");
+        o.description = String(get("description") || "").trim();
+        o.status = matchStatusKey(get("status"), ORDER_STATUS, "pendente");
+        o.date = parseDateCell(get("date")) || todayISO();
+        o.dueDate = parseDateCell(get("dueDate"));
+        o.amount = parseMoneyCell(get("amount"));
+        o.notes = String(get("notes") || "").trim();
+        if (!o.description && !o.amount && !o.documentNumber) return;
+        state.orders.push(o);
+        imported++;
+      } else {
+        var q = { id: uid("orc"), createdAt: new Date().toISOString(), clientId: client.id };
+        var num = String(get("number") || "").trim();
+        if (num) { q.number = num; } else { state.counters.quote++; q.number = new Date().getFullYear() + "/" + state.counters.quote; }
+        q.materialType = String(get("materialType") || "").trim();
+        q.clientRef = String(get("clientRef") || "").trim();
+        q.description = String(get("description") || "").trim();
+        q.amount = parseMoneyCell(get("amount"));
+        q.status = matchStatusKey(get("status"), QUOTE_STATUS, "rascunho");
+        q.date = parseDateCell(get("date")) || todayISO();
+        q.comercial = String(get("comercial") || "").trim();
+        q.notes = String(get("notes") || "").trim();
+        if (!q.description && !q.amount) return;
+        state.quotes.push(q);
+        imported++;
+      }
+    });
+    if (imported) { scheduleSave(); render(); }
+    var unmatchedNames = Object.keys(unmatched);
+    var summary = imported + " registo(s) importado(s).";
+    if (unmatchedNames.length) {
+      summary += "\n\n" + unmatchedNames.length + " linha(s) ignorada(s) — cliente não reconhecido:\n" + unmatchedNames.join(", ") +
+        "\n\nCorrige o nome na coluna Cliente para bater certo com o nome na app e volta a importar (só as linhas em falta, se quiseres).";
+    }
+    statusEl.textContent = summary;
+    toast(imported ? imported + " registo(s) importado(s)." : "Nenhum registo importado.");
+  }
   function doExportJson() {
     try {
       var payload = JSON.stringify(state, null, 2);
@@ -1902,6 +2160,9 @@
     formDialog = document.getElementById("form-dialog");
     confirmDialog = document.getElementById("confirm-dialog");
     exportDialog = document.getElementById("export-dialog");
+    importDialog = document.getElementById("import-dialog");
+    var importRunBtn = document.getElementById("import-run-btn");
+    if (importRunBtn) importRunBtn.addEventListener("click", runImport);
     var exportJsonBtn = document.getElementById("export-json-btn");
     if (exportJsonBtn) exportJsonBtn.addEventListener("click", doExportJson);
     var clearOrdersQuotesBtn = document.getElementById("clear-orders-quotes-btn");
