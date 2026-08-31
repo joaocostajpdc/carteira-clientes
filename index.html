@@ -2056,8 +2056,9 @@
     return /\.pdf$/i.test(file.name || "");
   }
   function pushOrderRecord(fields, clientId) {
+    var docNum = String(fields.documentNumber || "").trim();
     var o = { id: uid("ord"), createdAt: new Date().toISOString(), clientId: clientId };
-    o.documentNumber = String(fields.documentNumber || "").trim();
+    o.documentNumber = docNum;
     o.materialType = String(fields.materialType || "").trim();
     o.docStatus = matchStatusKey(fields.docStatus, ORDER_DOC_STATUS, "");
     o.description = String(fields.description || "").trim();
@@ -2066,14 +2067,20 @@
     o.dueDate = parseDateCell(fields.dueDate);
     o.amount = parseMoneyCell(fields.amount);
     o.notes = String(fields.notes || "").trim();
-    if (!o.description && !o.amount && !o.documentNumber) return false;
+    if (!o.description && !o.amount && !o.documentNumber) return "empty";
+    var isDup = docNum
+      ? state.orders.some(function (x) { return String(x.documentNumber || "").trim().toLowerCase() === docNum.toLowerCase(); })
+      : state.orders.some(function (x) {
+          return x.clientId === clientId && x.date === o.date && x.amount === o.amount &&
+            String(x.description || "").trim().toLowerCase() === o.description.toLowerCase();
+        });
+    if (isDup) return "duplicate";
     state.orders.push(o);
-    return true;
+    return "created";
   }
   function pushQuoteRecord(fields, clientId) {
-    var q = { id: uid("orc"), createdAt: new Date().toISOString(), clientId: clientId };
     var num = String(fields.number || "").trim();
-    if (num) { q.number = num; } else { state.counters.quote++; q.number = new Date().getFullYear() + "/" + state.counters.quote; }
+    var q = { id: uid("orc"), createdAt: new Date().toISOString(), clientId: clientId };
     q.materialType = String(fields.materialType || "").trim();
     q.clientRef = String(fields.clientRef || "").trim();
     q.description = String(fields.description || "").trim();
@@ -2082,9 +2089,17 @@
     q.date = parseDateCell(fields.date) || todayISO();
     q.comercial = String(fields.comercial || "").trim();
     q.notes = String(fields.notes || "").trim();
-    if (!q.description && !q.amount) return false;
+    if (!q.description && !q.amount) return "empty";
+    var isDup = num
+      ? state.quotes.some(function (x) { return String(x.number || "").trim().toLowerCase() === num.toLowerCase(); })
+      : state.quotes.some(function (x) {
+          return x.clientId === clientId && x.date === q.date && x.amount === q.amount &&
+            String(x.description || "").trim().toLowerCase() === q.description.toLowerCase();
+        });
+    if (isDup) return "duplicate";
+    if (num) { q.number = num; } else { state.counters.quote++; q.number = new Date().getFullYear() + "/" + state.counters.quote; }
     state.quotes.push(q);
-    return true;
+    return "created";
   }
   function runImport() {
     var fileInput = document.getElementById("import-file-input");
@@ -2142,6 +2157,7 @@
     }
     var dataRows = rows.slice(headerIdx + 1);
     var imported = 0;
+    var duplicates = 0;
     var unmatched = {};
     dataRows.forEach(function (row) {
       var get = function (field) { return colMap[field] !== undefined ? row[colMap[field]] : ""; };
@@ -2169,17 +2185,21 @@
           comercial: get("comercial"), notes: get("notes")
         }, client.id);
       }
-      if (ok) imported++;
+      if (ok === "created") imported++;
+      else if (ok === "duplicate") duplicates++;
     });
     if (imported) { scheduleSave(); render(); }
     var unmatchedNames = Object.keys(unmatched);
     var summary = imported + " registo(s) importado(s).";
+    if (duplicates) {
+      summary += "\n" + duplicates + " linha(s) ignorada(s) — documento já tinha sido importado.";
+    }
     if (unmatchedNames.length) {
       summary += "\n\n" + unmatchedNames.length + " linha(s) ignorada(s) — cliente não reconhecido:\n" + unmatchedNames.join(", ") +
         "\n\nCorrige o nome na coluna Cliente para bater certo com o nome na app e volta a importar (só as linhas em falta, se quiseres).";
     }
     statusEl.textContent = summary;
-    toast(imported ? imported + " registo(s) importado(s)." : "Nenhum registo importado.");
+    toast(imported ? imported + " registo(s) importado(s)." : "Nenhum registo novo importado.");
   }
   /* ---- PDF import (um documento por encomenda/orçamento) ---- */
   var PDF_WORKER_SRC = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -2239,21 +2259,27 @@
         var ok = kind === "encomenda"
           ? pushOrderRecord({ documentNumber: fields.number, description: fields.description, date: fields.date, amount: fields.amount }, client.id)
           : pushQuoteRecord({ number: fields.number, description: fields.description, date: fields.date, amount: fields.amount }, client.id);
-        if (!ok) return { file: file.name, error: "não foi possível ler os dados do documento" };
+        if (ok === "duplicate") return { file: file.name, duplicate: true, docNumber: fields.number };
+        if (ok !== "created") return { file: file.name, error: "não foi possível ler os dados do documento" };
         return { file: file.name, ok: true };
       }).catch(function (e) {
         return { file: file.name, error: "erro a ler o PDF (" + (e && e.message ? e.message : e) + ")" };
       });
     })).then(function (results) {
       var imported = results.filter(function (r) { return r.ok; }).length;
-      var failed = results.filter(function (r) { return !r.ok; });
+      var duplicates = results.filter(function (r) { return r.duplicate; });
+      var failed = results.filter(function (r) { return !r.ok && !r.duplicate; });
       if (imported) { scheduleSave(); render(); }
       var summary = imported + " documento(s) importado(s).";
+      if (duplicates.length) {
+        summary += "\n\n" + duplicates.length + " já tinha(m) sido importado(s) antes (nº de documento repetido) — ignorado(s):\n" +
+          duplicates.map(function (r) { return r.file + (r.docNumber ? " (" + r.docNumber + ")" : ""); }).join("\n");
+      }
       if (failed.length) {
         summary += "\n\n" + failed.length + " ficheiro(s) com problema:\n" + failed.map(function (r) { return r.file + " — " + r.error; }).join("\n");
       }
       statusEl.textContent = summary;
-      toast(imported ? imported + " documento(s) importado(s)." : "Nenhum documento importado.");
+      toast(imported ? imported + " documento(s) importado(s)." : "Nenhum documento novo importado.");
     });
   }
   function doExportJson() {
