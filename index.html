@@ -500,6 +500,10 @@
       <button class="btn" id="apply-volta-plan-btn">📋 Aplicar plano de voltas (importação)</button>
     </div>
     <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--sand);">
+      <p style="margin:0 0 12px;color:var(--ink-muted);font-size:13.5px;">Procura encomendas e orçamentos com o mesmo nº de documento (por exemplo, ficheiros importados mais do que uma vez) e apaga as cópias a mais, mantendo sempre o registo mais antigo.</p>
+      <button class="btn" id="remove-duplicates-btn">🧹 Remover duplicados</button>
+    </div>
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--sand);">
       <p style="margin:0 0 12px;color:var(--ink-muted);font-size:13.5px;">Recomendamos descarregar uma cópia acima antes de continuar. Esta ação apaga permanentemente todas as encomendas e todos os orçamentos — os clientes e as visitas não são afetados.</p>
       <button class="btn btn-danger" id="clear-orders-quotes-btn">🗑 Limpar encomendas e orçamentos</button>
     </div>
@@ -1705,6 +1709,49 @@
       }
     );
   }
+  function findDuplicateRecordIds() {
+    function dupIdsByKey(list, keyFn) {
+      var groups = {};
+      list.forEach(function (item) {
+        var key = keyFn(item);
+        if (!key) return;
+        groups[key] = groups[key] || [];
+        groups[key].push(item);
+      });
+      var ids = [];
+      Object.keys(groups).forEach(function (key) {
+        var group = groups[key];
+        if (group.length < 2) return;
+        group.sort(function (a, b) { return String(a.createdAt || "").localeCompare(String(b.createdAt || "")); });
+        group.slice(1).forEach(function (item) { ids.push(item.id); });
+      });
+      return ids;
+    }
+    var quoteDupIds = dupIdsByKey(state.quotes, function (q) { return String(q.number || "").trim().toLowerCase(); });
+    var orderDupIds = dupIdsByKey(state.orders, function (o) { return String(o.documentNumber || "").trim().toLowerCase(); });
+    return { quoteDupIds: quoteDupIds, orderDupIds: orderDupIds };
+  }
+  function removeDuplicateRecords() {
+    var dups = findDuplicateRecordIds();
+    var total = dups.quoteDupIds.length + dups.orderDupIds.length;
+    if (!total) {
+      toast("Não encontrei duplicados — está tudo em ordem.");
+      return;
+    }
+    confirmAction(
+      "Remover duplicados",
+      "Vai apagar " + dups.orderDupIds.length + " encomenda(s) e " + dups.quoteDupIds.length + " orçamento(s) com o mesmo nº de documento, mantendo sempre o registo mais antigo de cada. Não é possível desfazer.",
+      function () {
+        var qSet = {}; dups.quoteDupIds.forEach(function (id) { qSet[id] = true; });
+        var oSet = {}; dups.orderDupIds.forEach(function (id) { oSet[id] = true; });
+        state.quotes = state.quotes.filter(function (q) { return !qSet[q.id]; });
+        state.orders = state.orders.filter(function (o) { return !oSet[o.id]; });
+        if (exportDialog && exportDialog.open) exportDialog.close();
+        scheduleSave(); render();
+        toast(total + " registo(s) duplicado(s) removido(s).");
+      }
+    );
+  }
 
   /* ============ Event delegation ============ */
   function bindContentActions() {
@@ -2309,6 +2356,8 @@
     if (exportJsonBtn) exportJsonBtn.addEventListener("click", doExportJson);
     var clearOrdersQuotesBtn = document.getElementById("clear-orders-quotes-btn");
     if (clearOrdersQuotesBtn) clearOrdersQuotesBtn.addEventListener("click", clearOrdersAndQuotes);
+    var removeDuplicatesBtn = document.getElementById("remove-duplicates-btn");
+    if (removeDuplicatesBtn) removeDuplicatesBtn.addEventListener("click", removeDuplicateRecords);
     var applyVoltaPlanBtn = document.getElementById("apply-volta-plan-btn");
     if (applyVoltaPlanBtn) applyVoltaPlanBtn.addEventListener("click", function () {
       confirmAction(
