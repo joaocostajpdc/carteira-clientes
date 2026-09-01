@@ -2288,7 +2288,19 @@
     var endIdx = lines.findIndex(function (l) { return /^Observa[cç][oõ]es/i.test(l); });
     if (headIdx !== -1) {
       var stop = endIdx !== -1 && endIdx > headIdx ? endIdx : Math.min(headIdx + 6, lines.length);
-      fields.description = lines.slice(headIdx + 1, stop).join("; ").trim();
+      var itemLines = lines.slice(headIdx + 1, stop);
+      var cleanedLines = itemLines.map(function (l) {
+        // strip the trailing "Quant. Preço s/IVA Desc IVA Tot. Linha" columns from each
+        // item line (e.g. "…Cor Normal 6,00 mts € 35,11 20,00% 23% € 168,51" -> "…Cor Normal"),
+        // since the totals are already shown separately in the Valor column.
+        var m = l.match(/^(.*?)\s+\d+[.,]\d{2}\s+\S+\s+€/);
+        return (m ? m[1] : l).trim();
+      }).filter(function (l) { return l.length; });
+      fields.description = cleanedLines.join("; ")
+        .replace(/;\s*;+/g, "; ")
+        .replace(/\s{2,}/g, " ")
+        .replace(/^;\s*|;\s*$/g, "")
+        .trim();
     }
     return fields;
   }
