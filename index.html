@@ -2280,7 +2280,15 @@
     if (clientNoIdx !== -1) {
       var m = lines[clientNoIdx].match(/Cliente\s*No\.?\s*(\d+)/i);
       if (m) fields.clientNumber = m[1];
-      if (lines[clientNoIdx + 1]) fields.clientName = lines[clientNoIdx + 1].trim();
+      // The PDF has two columns (JPDC's own letterhead + the client's address block) that
+      // sit at the same line height, so the line right after "Cliente No." is sometimes
+      // JPDC's own "Telm./Telf." fragment, not the client name. The reliable spot for the
+      // name is the "Contribuinte <tax id> <NOME>" line a few rows down — look for that first.
+      for (var ni = clientNoIdx + 1; ni < Math.min(clientNoIdx + 5, lines.length); ni++) {
+        var cm = lines[ni].match(/Contribuinte\s+\d{6,9}\s+(.+)/i);
+        if (cm) { fields.clientName = cm[1].trim(); break; }
+      }
+      if (!fields.clientName && lines[clientNoIdx + 1]) fields.clientName = lines[clientNoIdx + 1].trim();
     }
     var totalMatch = text.match(/TOTAL DOCUMENTO\s*€?\s*([\d.,]+)/i);
     if (totalMatch) fields.amount = totalMatch[1];
@@ -2314,7 +2322,12 @@
         var client = importCtx.clientId ? clientById(importCtx.clientId) : null;
         if (!client && fields.clientNumber) client = findClientByNumber(fields.clientNumber);
         if (!client && fields.clientName) client = findClientByName(fields.clientName);
-        if (!client) return { file: file.name, error: "cliente não reconhecido (" + (fields.clientName || fields.clientNumber || "?") + ")" };
+        if (!client) {
+          var idBits = [];
+          if (fields.clientNumber) idBits.push("Cliente No. " + fields.clientNumber);
+          if (fields.clientName) idBits.push(fields.clientName);
+          return { file: file.name, error: "cliente não reconhecido (" + (idBits.length ? idBits.join(" — ") : "?") + ") — confirma se o cliente já existe na app" };
+        }
         var ok = kind === "encomenda"
           ? pushOrderRecord({ documentNumber: fields.number, description: fields.description, date: fields.date, amount: fields.amount }, client.id)
           : pushQuoteRecord({ number: fields.number, description: fields.description, date: fields.date, amount: fields.amount }, client.id);
