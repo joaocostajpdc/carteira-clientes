@@ -311,13 +311,25 @@
     text-align: left; font-weight: 600; font-size: 11.5px; text-transform: uppercase;
     letter-spacing: 0.04em; color: var(--ink-muted); padding: 8px 18px; border-bottom: 1px solid var(--sand);
   }
-  tbody td { padding: 11px 18px; border-bottom: 1px solid var(--sand); vertical-align: middle; }
+  tbody td { padding: 11px 18px; border-bottom: 1px solid var(--sand); vertical-align: top; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr.clickable { cursor: pointer; }
   tbody tr.clickable:hover { background: var(--surface-2); }
+  tbody tr:nth-child(even) { background: var(--surface-2); }
+  tbody tr:nth-child(even):hover { background: var(--sand); }
   .table-wrap { overflow-x: auto; }
   td.num, th.num { text-align: right; }
   .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+  .desc-cell { max-width: 440px; }
+  .desc-cell .desc-text { line-height: 1.45; }
+  .desc-cell.clamp .desc-text {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .desc-cell.clamp.expanded .desc-text { -webkit-line-clamp: unset; overflow: visible; }
+  .desc-cell .desc-more {
+    display: inline-block; margin-top: 4px; font-size: 11.5px; color: var(--teal); cursor: pointer; font-weight: 600;
+  }
+  .desc-sub { font-size: 11.5px; color: var(--ink-muted); margin-top: 3px; }
 
   .empty-state { padding: 46px 20px; text-align: center; color: var(--ink-muted); }
   .empty-state .ic { font-size: 26px; margin-bottom: 10px; opacity: 0.6; }
@@ -574,6 +586,71 @@
   var KNOWN_ZONAS = ["Anha", "Arcos de Valdevez", "Barca", "Barcelos", "Espanha", "Esposende", "Lanheses", "Maia", "Melgaço", "Monção", "Neiva", "Neutro", "Paredes de Coura", "Ponte da Barca", "Ponte de Lima", "Povoa de Varzim", "Viana do Castelo", "Vila Verde"];
   var KNOWN_COMERCIAIS = ["João", "David", "Balcão", "S/ comercial"];
   var KNOWN_MATERIAIS = ["Chapas Lisas", "Chapas Quinadas", "Ferragens", "Mosquiteiras", "Painéis", "Portas", "Portas Pivotantes", "Portas chapeadas", "Produtos Químicos", "Vedante"];
+  // Prazo de entrega (dias úteis) por tipo de material — ajustável aqui; usado para preencher
+  // "Entrega prevista" automaticamente quando não é indicada à mão. DEFAULT_LEAD_DAYS aplica-se
+  // a materiais fora desta lista, ou enquanto os valores exatos não são confirmados.
+  var MATERIAL_LEAD_DAYS = {
+    "Chapas Lisas": 5,
+    "Chapas Quinadas": 5,
+    "Ferragens": 3,
+    "Mosquiteiras": 7,
+    "Painéis": 7,
+    "Portas": 15,
+    "Portas Pivotantes": 20,
+    "Portas chapeadas": 15,
+    "Produtos Químicos": 3,
+    "Vedante": 3
+  };
+  var DEFAULT_LEAD_DAYS = 5;
+  // Palavras-chave para adivinhar o tipo de material a partir da descrição de um item lido de PDF.
+  // A ordem importa: regras mais específicas (Portas Pivotantes/chapeadas) vêm antes da genérica (Portas).
+  var MATERIAL_KEYWORDS = [
+    { material: "Portas Pivotantes", kws: ["pivotante"] },
+    { material: "Portas chapeadas", kws: ["chapeada"] },
+    { material: "Chapas Quinadas", kws: ["quinad"] },
+    { material: "Mosquiteiras", kws: ["mosquit"] },
+    { material: "Painéis", kws: ["painel", "paineis", "painéis", "apainelad"] },
+    { material: "Vedante", kws: ["vedante", "vedaç", "vedac"] },
+    { material: "Produtos Químicos", kws: ["silicone", "quimic", "químic", "verniz", " cola ", "colas "] },
+    { material: "Ferragens", kws: ["fechadura", "dobradiça", "dobradica", "puxador", "fecho ", "ferragem", "dobradiças"] },
+    { material: "Portas", kws: ["porta "] },
+    { material: "Chapas Lisas", kws: ["chapa lisa", "chapas lisas"] }
+  ];
+  function guessMaterialType(text) {
+    var norm = normText(text || "");
+    for (var i = 0; i < MATERIAL_KEYWORDS.length; i++) {
+      var entry = MATERIAL_KEYWORDS[i];
+      for (var j = 0; j < entry.kws.length; j++) {
+        if (norm.indexOf(normText(entry.kws[j])) !== -1) return entry.material;
+      }
+    }
+    return "";
+  }
+  function leadDaysForMaterial(materialType) {
+    var mt = String(materialType || "").trim();
+    if (!mt) return null;
+    if (MATERIAL_LEAD_DAYS.hasOwnProperty(mt)) return MATERIAL_LEAD_DAYS[mt];
+    var norm = normText(mt);
+    var found = Object.keys(MATERIAL_LEAD_DAYS).find(function (k) { return normText(k) === norm; });
+    return found ? MATERIAL_LEAD_DAYS[found] : DEFAULT_LEAD_DAYS;
+  }
+  function addBusinessDays(dateISO, days) {
+    var d = new Date(dateISO + "T00:00:00");
+    if (isNaN(d.getTime())) return "";
+    var added = 0;
+    while (added < days) {
+      d.setDate(d.getDate() + 1);
+      var dow = d.getDay();
+      if (dow !== 0 && dow !== 6) added++;
+    }
+    return d.toISOString().slice(0, 10);
+  }
+  function computeDueDate(dateISO, materialType) {
+    if (!dateISO) return "";
+    var days = leadDaysForMaterial(materialType);
+    if (days === null) return "";
+    return addBusinessDays(dateISO, days);
+  }
 
   /* ============ Utils ============ */
   function uid(prefix) {
@@ -631,6 +708,15 @@
   function chip(map, key) {
     var m = statusMeta(map, key);
     return '<span class="chip ' + m.cls + '">' + escapeHtml(m.label) + "</span>";
+  }
+  function descCell(text, subHtml) {
+    var t = text || "";
+    var isLong = t.length > 110;
+    return '<div class="desc-cell' + (isLong ? " clamp" : "") + '"' + (t ? ' title="' + escapeHtml(t) + '"' : "") + '>' +
+      '<div class="desc-text">' + escapeHtml(t) + "</div>" +
+      (subHtml || "") +
+      (isLong ? '<span class="desc-more" data-desc-toggle>mostrar mais</span>' : "") +
+      "</div>";
   }
   function selectOptions(map, selected) {
     return Object.keys(map).map(function (k) {
@@ -953,12 +1039,17 @@
     svg += "</svg>";
     return svg;
   }
-  function svgHorizontalBarChart(items) {
+  function svgHorizontalBarChart(items, opts) {
+    opts = opts || {};
+    var fmt = opts.fmt || function (v) { return String(v); };
+    var ariaLabel = opts.ariaLabel || "Clientes por zona";
+    var seriesLabel = opts.seriesLabel || "Clientes";
+    var colorVar = opts.colorVar || "var(--teal)";
     var W = 520, rowH = 28, labelW = 92, padR = 40;
     var barMaxW = W - labelW - padR;
     var H = items.length * rowH + 6;
     var max = Math.max.apply(null, items.map(function (e) { return e.value; }).concat([1]));
-    var svg = '<svg class="chart-svg" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Clientes por zona">';
+    var svg = '<svg class="chart-svg" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="' + escapeHtml(ariaLabel) + '">';
     items.forEach(function (e, i) {
       var rowY = i * rowH + 3;
       var barH = Math.min(20, rowH - 8);
@@ -966,11 +1057,109 @@
       var w = max > 0 ? (e.value / max) * barMaxW : 0;
       var lbl = e.label.length > 14 ? e.label.slice(0, 13) + "…" : e.label;
       svg += '<text class="cat-label" x="' + (labelW - 8) + '" y="' + (barY + barH / 2 + 3.5).toFixed(1) + '" text-anchor="end">' + escapeHtml(lbl) + "</text>";
-      svg += barGroup(labelW, barY, w, barH, barY + barH, "var(--teal)", e.label, "Clientes", String(e.value));
-      svg += '<text class="val-label" x="' + (labelW + w + 6).toFixed(1) + '" y="' + (barY + barH / 2 + 3.5).toFixed(1) + '" text-anchor="start">' + e.value + "</text>";
+      svg += barGroup(labelW, barY, w, barH, barY + barH, colorVar, e.label, seriesLabel, fmt(e.value));
+      svg += '<text class="val-label" x="' + (labelW + w + 6).toFixed(1) + '" y="' + (barY + barH / 2 + 3.5).toFixed(1) + '" text-anchor="start">' + escapeHtml(fmt(e.value)) + "</text>";
     });
     svg += "</svg>";
     return svg;
+  }
+  function svgBarChart(categories, vals, seriesLabel, colorVar) {
+    var W = 520, H = 210, ML = 42, MR = 6, MT = 8, MB = 24;
+    var plotW = W - ML - MR, plotH = H - MT - MB, baseline = MT + plotH;
+    var max = niceMax(Math.max.apply(null, vals));
+    var n = categories.length;
+    var slotW = plotW / n;
+    var barW = Math.max(6, Math.min(30, slotW - 12));
+    var svg = '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="' + escapeHtml(seriesLabel) + '">';
+    [0, 0.5, 1].forEach(function (f) {
+      var y = MT + plotH - f * plotH;
+      svg += '<line class="grid-line" x1="' + ML + '" y1="' + y.toFixed(1) + '" x2="' + (W - MR) + '" y2="' + y.toFixed(1) + '"/>';
+      svg += '<text class="axis-label" x="' + (ML - 6) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end">' + escapeHtml(compactMoney(max * f)) + "</text>";
+    });
+    categories.forEach(function (cat, i) {
+      var slotX = ML + i * slotW;
+      var bx = slotX + (slotW - barW) / 2;
+      var v = vals[i];
+      var h = max > 0 ? (v / max) * plotH : 0;
+      svg += barGroup(bx, baseline - h, barW, h, baseline, colorVar, cat.label, seriesLabel, fmtMoney(v));
+      svg += '<text class="cat-label" x="' + (bx + barW / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + escapeHtml(cat.label) + "</text>";
+    });
+    svg += "</svg>";
+    return svg;
+  }
+  function lastNWeekKeys(n) {
+    var now = new Date();
+    var dow = now.getDay();
+    var mondayOffset = dow === 0 ? -6 : 1 - dow;
+    var thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+    var out = [];
+    for (var i = n - 1; i >= 0; i--) {
+      var start = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - i * 7);
+      var end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+      var label = String(start.getDate()).padStart(2, "0") + "/" + String(start.getMonth() + 1).padStart(2, "0");
+      out.push({ startISO: isoDate(start), endISO: isoDate(end), label: label });
+    }
+    return out;
+  }
+  function isoDate(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function sumInRange(list, startISO, endISO) {
+    return list.filter(function (x) { return x.date && x.date >= startISO && x.date <= endISO; })
+      .reduce(function (s, x) { return s + Number(x.amount || 0); }, 0);
+  }
+  function amountInWeek(list, week) {
+    return sumInRange(list, week.startISO, week.endISO);
+  }
+  function pctDelta(curr, prev) {
+    if (!prev) return curr > 0 ? null : 0;
+    return ((curr - prev) / prev) * 100;
+  }
+  function deltaHtml(curr, prev) {
+    var d = pctDelta(curr, prev);
+    if (d === null) return '<span class="chip chip-teal">novo</span>';
+    if (Math.abs(d) < 0.5) return '<span class="chip chip-neutral">≈ igual</span>';
+    var cls = d > 0 ? "chip-success" : "chip-danger";
+    var arrow = d > 0 ? "▲" : "▼";
+    return '<span class="chip ' + cls + '">' + arrow + " " + Math.abs(d).toFixed(0) + "%</span>";
+  }
+  function renderWeeklySalesChart() {
+    var weeks = lastNWeekKeys(8);
+    var vals = weeks.map(function (w) { return amountInWeek(state.orders, w); });
+    var hasData = vals.some(function (v) { return v > 0; });
+    return '<div class="chart-card"><div class="chart-title">Vendas semanais (encomendas)</div>' +
+      '<div class="chart-sub">Valor total, últimas 8 semanas</div>' +
+      (hasData ? svgBarChart(weeks, vals, "Encomendas", "var(--teal)")
+        : '<div class="chart-empty-note">Ainda sem valores suficientes para mostrar.</div>') +
+      "</div>";
+  }
+  function renderTopClientsChart() {
+    var totals = {};
+    state.orders.forEach(function (o) { totals[o.clientId] = (totals[o.clientId] || 0) + Number(o.amount || 0); });
+    var entries = Object.keys(totals).map(function (id) { return { label: clientName(id), value: totals[id] }; })
+      .filter(function (e) { return e.value > 0; });
+    entries.sort(function (a, b) { return b.value - a.value; });
+    var top = entries.slice(0, 7);
+    return '<div class="chart-card"><div class="chart-title">Top clientes por valor</div>' +
+      '<div class="chart-sub">Total de encomendas, todo o histórico</div>' +
+      (top.length ? svgHorizontalBarChart(top, { fmt: compactMoney, ariaLabel: "Top clientes por valor", seriesLabel: "Valor", colorVar: "var(--series-2)" })
+        : '<div class="chart-empty-note">Ainda sem encomendas com valor.</div>') +
+      "</div>";
+  }
+  function renderMaterialSalesChart() {
+    var totals = {};
+    state.orders.forEach(function (o) {
+      var m = o.materialType || "Outro";
+      totals[m] = (totals[m] || 0) + Number(o.amount || 0);
+    });
+    var entries = Object.keys(totals).map(function (k) { return { label: k, value: totals[k] }; })
+      .filter(function (e) { return e.value > 0; });
+    entries.sort(function (a, b) { return b.value - a.value; });
+    return '<div class="chart-card"><div class="chart-title">Vendas por tipo de material</div>' +
+      '<div class="chart-sub">Total de encomendas por material</div>' +
+      (entries.length ? svgHorizontalBarChart(entries, { fmt: compactMoney, ariaLabel: "Vendas por tipo de material", seriesLabel: "Valor", colorVar: "var(--teal)" })
+        : '<div class="chart-empty-note">Ainda sem material identificado nas encomendas.</div>') +
+      "</div>";
   }
   function renderMonthlyChart() {
     var months = lastNMonthKeys(6);
@@ -1023,6 +1212,14 @@
 
     var upcomingList = upcomingVisits.slice().sort(function (a, b) { return a.date.localeCompare(b.date); });
 
+    var weeksCmp = lastNWeekKeys(2);
+    var weekCurr = amountInWeek(state.orders, weeksCmp[1]), weekPrev = amountInWeek(state.orders, weeksCmp[0]);
+    var monthsCmp = lastNMonthKeys(2);
+    var monthCurrStart = monthsCmp[1].key + "-01", monthCurrEnd = monthsCmp[1].key + "-31";
+    var monthPrevStart = monthsCmp[0].key + "-01", monthPrevEnd = monthsCmp[0].key + "-31";
+    var monthCurr = sumInRange(state.orders, monthCurrStart, monthCurrEnd);
+    var monthPrev = sumInRange(state.orders, monthPrevStart, monthPrevEnd);
+
     return (
       '<div class="page-head"><div><h1>Painel</h1><div class="sub">Resumo da atividade comercial</div></div>' +
       '<div class="head-actions"><button class="btn btn-primary" data-open-form="cliente">+ Novo cliente</button></div></div>' +
@@ -1032,7 +1229,12 @@
         statCard("Orçamentos por decidir", pendingQuotes, "rascunho ou enviados") +
         statCard("Valor de orçamentos aceites", fmtMoney(acceptedValue), "acumulado") +
       "</div>" +
+      '<div class="stat-grid">' +
+        statCard("Vendas esta semana", fmtMoney(weekCurr), "semana passada: " + fmtMoney(weekPrev), deltaHtml(weekCurr, weekPrev)) +
+        statCard("Vendas este mês", fmtMoney(monthCurr), "mês passado: " + fmtMoney(monthPrev), deltaHtml(monthCurr, monthPrev)) +
+      "</div>" +
       '<div class="chart-row">' + renderMonthlyChart() + renderZonaChart() + "</div>" +
+      '<div class="chart-row">' + renderWeeklySalesChart() + renderTopClientsChart() + renderMaterialSalesChart() + "</div>" +
       '<div class="panel">' +
         '<div class="panel-head"><div><h2>Visitas nos próximos 7 dias</h2></div>' +
         '<button class="btn btn-sm" data-open-form="visita">+ Agendar visita</button></div>' +
@@ -1052,8 +1254,8 @@
       "</div></div>"
     );
   }
-  function statCard(label, value, hint) {
-    return '<div class="stat-card"><div class="label">' + escapeHtml(label) + '</div><div class="value' + (String(value).length > 8 ? " small" : "") + '">' + (typeof value === "number" ? value : escapeHtml(value)) + '</div><div class="hint">' + escapeHtml(hint) + "</div></div>";
+  function statCard(label, value, hint, extraHtml) {
+    return '<div class="stat-card"><div class="label">' + escapeHtml(label) + '</div><div class="value' + (String(value).length > 8 ? " small" : "") + '">' + (typeof value === "number" ? value : escapeHtml(value)) + (extraHtml ? " " + extraHtml : "") + '</div><div class="hint">' + escapeHtml(hint) + "</div></div>";
   }
   function emptyState(msg, btnHtml) {
     return '<div class="empty-state"><div class="ic">◌</div><div>' + escapeHtml(msg) + "</div>" + (btnHtml || "") + "</div>";
@@ -1246,12 +1448,12 @@
           '<td class="mono">' + (o.documentNumber ? escapeHtml(o.documentNumber) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
           (hideClient ? "" : '<td><a href="#/clientes/' + encodeURIComponent(o.clientId) + '">' + escapeHtml(clientName(o.clientId)) + "</a></td>") +
           "<td>" + (o.materialType ? escapeHtml(o.materialType) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
-          "<td>" + escapeHtml(o.description) + "</td>" +
+          "<td>" + descCell(o.description) + "</td>" +
           "<td>" + chip(ORDER_STATUS, o.status) + (docStatusLabel ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:3px;">' + escapeHtml(docStatusLabel) + "</div>" : "") + "</td>" +
           '<td class="num mono">' + fmtMoney(o.amount) + "</td>" +
           "<td>" + fmtDate(o.date) + "</td>" +
           "<td>" + fmtDate(o.dueDate) + "</td>" +
-          '<td class="row-actions"><button class="btn btn-sm" data-open-form="encomenda" data-id="' + o.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="encomenda" data-id="' + o.id + '">Eliminar</button></td>' +
+          '<td class="row-actions">' + (o.pdfData ? '<button class="btn btn-sm" data-open-pdf="encomenda" data-id="' + o.id + '" title="Abrir PDF original">📄 PDF</button>' : "") + '<button class="btn btn-sm" data-open-form="encomenda" data-id="' + o.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="encomenda" data-id="' + o.id + '">Eliminar</button></td>' +
           "</tr>";
       }).join("") + "</tbody></table></div>";
   }
@@ -1295,11 +1497,11 @@
           '<td class="mono">' + escapeHtml(q.number) + "</td>" +
           (hideClient ? "" : '<td><a href="#/clientes/' + encodeURIComponent(q.clientId) + '">' + escapeHtml(clientName(q.clientId)) + "</a></td>") +
           "<td>" + (q.materialType ? escapeHtml(q.materialType) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
-          "<td>" + escapeHtml(q.description) + (q.clientRef ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:2px;">Ref. cliente: ' + escapeHtml(q.clientRef) + "</div>" : "") + "</td>" +
+          "<td>" + descCell(q.description, q.clientRef ? '<div class="desc-sub">Ref. cliente: ' + escapeHtml(q.clientRef) + "</div>" : "") + "</td>" +
           "<td>" + chip(QUOTE_STATUS, q.status) + "</td>" +
           '<td class="num mono">' + fmtMoney(q.amount) + "</td>" +
           "<td>" + fmtDate(q.validUntil) + "</td>" +
-          '<td class="row-actions"><button class="btn btn-sm" data-open-form="orcamento" data-id="' + q.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="orcamento" data-id="' + q.id + '">Eliminar</button></td>' +
+          '<td class="row-actions">' + (q.pdfData ? '<button class="btn btn-sm" data-open-pdf="orcamento" data-id="' + q.id + '" title="Abrir PDF original">📄 PDF</button>' : "") + '<button class="btn btn-sm" data-open-form="orcamento" data-id="' + q.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="orcamento" data-id="' + q.id + '">Eliminar</button></td>' +
           "</tr>";
       }).join("") + "</tbody></table></div>";
   }
@@ -1606,7 +1808,8 @@
     if (!o) { o = { id: uid("ord"), createdAt: new Date().toISOString() }; state.orders.push(o); }
     o.clientId = clientId; o.description = desc; o.amount = parseFloat(val("f-amount")) || 0;
     o.documentNumber = val("f-docnum"); o.materialType = val("f-material"); o.docStatus = val("f-docstatus");
-    o.status = val("f-status"); o.date = val("f-date") || todayISO(); o.dueDate = val("f-due"); o.notes = val("f-notes");
+    o.status = val("f-status"); o.date = val("f-date") || todayISO(); o.notes = val("f-notes");
+    o.dueDate = val("f-due") || computeDueDate(o.date, o.materialType);
     scheduleSave(); render();
     toast(id ? "Encomenda atualizada." : "Encomenda criada.");
   }
@@ -1772,6 +1975,15 @@
         deleteEntity(el.getAttribute("data-del"), el.getAttribute("data-id"));
       });
     });
+    content.querySelectorAll("[data-open-pdf]").forEach(function (el) {
+      el.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var kind = el.getAttribute("data-open-pdf");
+        var id = el.getAttribute("data-id");
+        var record = kind === "encomenda" ? state.orders.find(function (x) { return x.id === id; }) : state.quotes.find(function (x) { return x.id === id; });
+        if (record) openStoredPdf(record.pdfData, record.pdfFileName);
+      });
+    });
     content.querySelectorAll("[data-client-tab]").forEach(function (el) {
       el.addEventListener("click", function () { navigate("/clientes/" + encodeURIComponent(route.id) + "/" + el.getAttribute("data-client-tab")); });
     });
@@ -1847,6 +2059,14 @@
     if (e.target.closest("[data-action='close-confirm']")) confirmDialog.close();
     if (e.target.closest("[data-action='close-export']")) exportDialog.close();
     if (e.target.closest("[data-action='close-import']")) importDialog.close();
+    var descToggle = e.target.closest("[data-desc-toggle]");
+    if (descToggle) {
+      var cell = descToggle.closest(".desc-cell");
+      if (cell) {
+        cell.classList.toggle("expanded");
+        descToggle.textContent = cell.classList.contains("expanded") ? "mostrar menos" : "mostrar mais";
+      }
+    }
     var results = document.getElementById("global-search-results");
     if (results && !results.hidden && !e.target.closest(".sr-item") && e.target.id !== "global-search-input") {
       results.hidden = true;
@@ -2111,9 +2331,11 @@
     o.description = String(fields.description || "").trim();
     o.status = matchStatusKey(fields.status, ORDER_STATUS, "pendente");
     o.date = parseDateCell(fields.date) || todayISO();
-    o.dueDate = parseDateCell(fields.dueDate);
+    o.dueDate = parseDateCell(fields.dueDate) || computeDueDate(o.date, o.materialType);
     o.amount = parseMoneyCell(fields.amount);
     o.notes = String(fields.notes || "").trim();
+    o.pdfData = fields.pdfData || "";
+    o.pdfFileName = fields.pdfFileName || "";
     if (!o.description && !o.amount && !o.documentNumber) return "empty";
     var isDup = docNum
       ? state.orders.some(function (x) { return String(x.documentNumber || "").trim().toLowerCase() === docNum.toLowerCase(); })
@@ -2136,6 +2358,8 @@
     q.date = parseDateCell(fields.date) || todayISO();
     q.comercial = String(fields.comercial || "").trim();
     q.notes = String(fields.notes || "").trim();
+    q.pdfData = fields.pdfData || "";
+    q.pdfFileName = fields.pdfFileName || "";
     if (!q.description && !q.amount) return "empty";
     var isDup = num
       ? state.quotes.some(function (x) { return String(x.number || "").trim().toLowerCase() === num.toLowerCase(); })
@@ -2312,10 +2536,40 @@
     }
     return fields;
   }
+  function openStoredPdf(dataUrl, fileName) {
+    if (!dataUrl) { toast("Sem PDF associado a este registo.", "error"); return; }
+    try {
+      var comma = dataUrl.indexOf(",");
+      var meta = dataUrl.slice(0, comma);
+      var b64 = dataUrl.slice(comma + 1);
+      var mimeMatch = meta.match(/data:([^;]+);base64/);
+      var mime = mimeMatch ? mimeMatch[1] : "application/pdf";
+      var binary = atob(b64);
+      var bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      var blob = new Blob([bytes], { type: mime });
+      var url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    } catch (e) {
+      toast("Não foi possível abrir o PDF.", "error");
+    }
+  }
+  function arrayBufferToBase64(buf) {
+    var bytes = new Uint8Array(buf);
+    var binary = "";
+    var chunk = 0x8000;
+    for (var i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
   function processPdfFiles(files, statusEl) {
     var kind = importCtx.kind;
     Promise.all(files.map(function (file) {
+      var pdfDataUrl = "";
       return file.arrayBuffer().then(function (buf) {
+        pdfDataUrl = "data:application/pdf;base64," + arrayBufferToBase64(buf);
         return extractPdfLines(buf);
       }).then(function (lines) {
         var fields = parsePdfDocFields(lines, kind);
@@ -2328,9 +2582,13 @@
           if (fields.clientName) idBits.push(fields.clientName);
           return { file: file.name, error: "cliente não reconhecido (" + (idBits.length ? idBits.join(" — ") : "?") + ") — confirma se o cliente já existe na app" };
         }
-        var ok = kind === "encomenda"
-          ? pushOrderRecord({ documentNumber: fields.number, description: fields.description, date: fields.date, amount: fields.amount }, client.id)
-          : pushQuoteRecord({ number: fields.number, description: fields.description, date: fields.date, amount: fields.amount }, client.id);
+        var materialType = guessMaterialType(fields.description);
+        var recordFields = {
+          documentNumber: fields.number, number: fields.number, description: fields.description,
+          date: fields.date, amount: fields.amount, materialType: materialType,
+          pdfData: pdfDataUrl, pdfFileName: file.name
+        };
+        var ok = kind === "encomenda" ? pushOrderRecord(recordFields, client.id) : pushQuoteRecord(recordFields, client.id);
         if (ok === "duplicate") return { file: file.name, duplicate: true, docNumber: fields.number };
         if (ok !== "created") return { file: file.name, error: "não foi possível ler os dados do documento" };
         return { file: file.name, ok: true };
