@@ -516,6 +516,10 @@
       <button class="btn" id="remove-duplicates-btn">🧹 Remover duplicados</button>
     </div>
     <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--sand);">
+      <p style="margin:0 0 12px;color:var(--ink-muted);font-size:13.5px;">Para encomendas e orçamentos antigos sem tipo de material definido, tenta adivinhar o tipo a partir da descrição (não altera os que já têm um tipo definido).</p>
+      <button class="btn" id="fill-material-types-btn">🔧 Preencher tipo de material em falta</button>
+    </div>
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--sand);">
       <p style="margin:0 0 12px;color:var(--ink-muted);font-size:13.5px;">Recomendamos descarregar uma cópia acima antes de continuar. Esta ação apaga permanentemente todas as encomendas e todos os orçamentos — os clientes e as visitas não são afetados.</p>
       <button class="btn btn-danger" id="clear-orders-quotes-btn">🗑 Limpar encomendas e orçamentos</button>
     </div>
@@ -1807,7 +1811,7 @@
     var o = id ? state.orders.find(function (x) { return x.id === id; }) : null;
     if (!o) { o = { id: uid("ord"), createdAt: new Date().toISOString() }; state.orders.push(o); }
     o.clientId = clientId; o.description = desc; o.amount = parseFloat(val("f-amount")) || 0;
-    o.documentNumber = val("f-docnum"); o.materialType = val("f-material"); o.docStatus = val("f-docstatus");
+    o.documentNumber = val("f-docnum"); o.materialType = val("f-material") || guessMaterialType(desc); o.docStatus = val("f-docstatus");
     o.status = val("f-status"); o.date = val("f-date") || todayISO(); o.notes = val("f-notes");
     o.dueDate = val("f-due") || computeDueDate(o.date, o.materialType);
     scheduleSave(); render();
@@ -1820,7 +1824,7 @@
     var q = id ? state.quotes.find(function (x) { return x.id === id; }) : null;
     if (!q) { state.counters.quote++; q = { id: uid("orc"), number: new Date().getFullYear() + "/" + state.counters.quote, createdAt: new Date().toISOString() }; state.quotes.push(q); }
     q.clientId = clientId; q.description = desc; q.amount = parseFloat(val("f-amount")) || 0;
-    q.materialType = val("f-material"); q.clientRef = val("f-clientref"); q.comercial = val("f-comercial");
+    q.materialType = val("f-material") || guessMaterialType(desc); q.clientRef = val("f-clientref"); q.comercial = val("f-comercial");
     q.status = val("f-status"); q.date = val("f-date") || todayISO(); q.validUntil = val("f-valid"); q.notes = val("f-notes");
     scheduleSave(); render();
     toast(id ? "Orçamento atualizado." : "Orçamento criado.");
@@ -1952,6 +1956,37 @@
         if (exportDialog && exportDialog.open) exportDialog.close();
         scheduleSave(); render();
         toast(total + " registo(s) duplicado(s) removido(s).");
+      }
+    );
+  }
+  function findMissingMaterialTypeFixes() {
+    function fixesFor(list) {
+      var out = [];
+      list.forEach(function (item) {
+        if (String(item.materialType || "").trim()) return;
+        var guess = guessMaterialType(item.description);
+        if (guess) out.push({ item: item, guess: guess });
+      });
+      return out;
+    }
+    return { orderFixes: fixesFor(state.orders), quoteFixes: fixesFor(state.quotes) };
+  }
+  function fillMissingMaterialTypes() {
+    var fixes = findMissingMaterialTypeFixes();
+    var total = fixes.orderFixes.length + fixes.quoteFixes.length;
+    if (!total) {
+      toast("Não encontrei encomendas ou orçamentos com tipo de material em falta e reconhecível.");
+      return;
+    }
+    confirmAction(
+      "Preencher tipo de material em falta",
+      "Vai preencher o tipo de material de " + fixes.orderFixes.length + " encomenda(s) e " + fixes.quoteFixes.length + " orçamento(s) com base na descrição. Os registos que já têm um tipo definido não são alterados. Não é possível desfazer.",
+      function () {
+        fixes.orderFixes.forEach(function (f) { f.item.materialType = f.guess; });
+        fixes.quoteFixes.forEach(function (f) { f.item.materialType = f.guess; });
+        if (exportDialog && exportDialog.open) exportDialog.close();
+        scheduleSave(); render();
+        toast(total + " registo(s) atualizado(s) com o tipo de material.");
       }
     );
   }
@@ -2326,9 +2361,9 @@
     var docNum = String(fields.documentNumber || "").trim();
     var o = { id: uid("ord"), createdAt: new Date().toISOString(), clientId: clientId };
     o.documentNumber = docNum;
-    o.materialType = String(fields.materialType || "").trim();
-    o.docStatus = matchStatusKey(fields.docStatus, ORDER_DOC_STATUS, "");
     o.description = String(fields.description || "").trim();
+    o.materialType = String(fields.materialType || "").trim() || guessMaterialType(o.description);
+    o.docStatus = matchStatusKey(fields.docStatus, ORDER_DOC_STATUS, "");
     o.status = matchStatusKey(fields.status, ORDER_STATUS, "pendente");
     o.date = parseDateCell(fields.date) || todayISO();
     o.dueDate = parseDateCell(fields.dueDate) || computeDueDate(o.date, o.materialType);
@@ -2350,9 +2385,9 @@
   function pushQuoteRecord(fields, clientId) {
     var num = String(fields.number || "").trim();
     var q = { id: uid("orc"), createdAt: new Date().toISOString(), clientId: clientId };
-    q.materialType = String(fields.materialType || "").trim();
     q.clientRef = String(fields.clientRef || "").trim();
     q.description = String(fields.description || "").trim();
+    q.materialType = String(fields.materialType || "").trim() || guessMaterialType(q.description);
     q.amount = parseMoneyCell(fields.amount);
     q.status = matchStatusKey(fields.status, QUOTE_STATUS, "rascunho");
     q.date = parseDateCell(fields.date) || todayISO();
@@ -2641,6 +2676,8 @@
     if (clearOrdersQuotesBtn) clearOrdersQuotesBtn.addEventListener("click", clearOrdersAndQuotes);
     var removeDuplicatesBtn = document.getElementById("remove-duplicates-btn");
     if (removeDuplicatesBtn) removeDuplicatesBtn.addEventListener("click", removeDuplicateRecords);
+    var fillMaterialTypesBtn = document.getElementById("fill-material-types-btn");
+    if (fillMaterialTypesBtn) fillMaterialTypesBtn.addEventListener("click", fillMissingMaterialTypes);
     var applyVoltaPlanBtn = document.getElementById("apply-volta-plan-btn");
     if (applyVoltaPlanBtn) applyVoltaPlanBtn.addEventListener("click", function () {
       confirmAction(
