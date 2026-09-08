@@ -383,6 +383,8 @@
     padding: 8px 11px; width: 100%;
   }
   .input:focus { border-color: var(--teal); }
+  .input-sm { padding: 5px 7px; font-size: 12.5px; min-width: 108px; }
+  .input-sm[type="date"] { min-width: 118px; }
   .search-input { max-width: 280px; }
   select.filter-input { max-width: 190px; }
 
@@ -474,6 +476,7 @@
 </style>
 
 <div id="app"></div>
+<datalist id="dl-materiais-global"></datalist>
 <div id="toast-wrap"></div>
 <div id="chart-tooltip" class="chart-tooltip" role="status" aria-live="polite"></div>
 
@@ -1451,12 +1454,12 @@
         return "<tr>" +
           '<td class="mono">' + (o.documentNumber ? escapeHtml(o.documentNumber) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
           (hideClient ? "" : '<td><a href="#/clientes/' + encodeURIComponent(o.clientId) + '">' + escapeHtml(clientName(o.clientId)) + "</a></td>") +
-          "<td>" + (o.materialType ? escapeHtml(o.materialType) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
+          '<td><input class="input input-sm" list="dl-materiais-global" placeholder="—" data-inline-material data-kind="encomenda" data-id="' + o.id + '" value="' + escapeHtml(o.materialType || "") + '"></td>' +
           "<td>" + descCell(o.description) + "</td>" +
-          "<td>" + chip(ORDER_STATUS, o.status) + (docStatusLabel ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:3px;">' + escapeHtml(docStatusLabel) + "</div>" : "") + "</td>" +
+          '<td><select class="input input-sm" data-inline-status data-kind="encomenda" data-id="' + o.id + '">' + selectOptions(ORDER_STATUS, o.status) + "</select>" + (docStatusLabel ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:3px;">' + escapeHtml(docStatusLabel) + "</div>" : "") + "</td>" +
           '<td class="num mono">' + fmtMoney(o.amount) + "</td>" +
           "<td>" + fmtDate(o.date) + "</td>" +
-          "<td>" + fmtDate(o.dueDate) + "</td>" +
+          '<td><input type="date" class="input input-sm" data-inline-due data-id="' + o.id + '" value="' + (o.dueDate || "") + '"></td>' +
           '<td class="row-actions">' + (o.pdfData ? '<button class="btn btn-sm" data-open-pdf="encomenda" data-id="' + o.id + '" title="Abrir PDF original">📄 PDF</button>' : "") + '<button class="btn btn-sm" data-open-form="encomenda" data-id="' + o.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="encomenda" data-id="' + o.id + '">Eliminar</button></td>' +
           "</tr>";
       }).join("") + "</tbody></table></div>";
@@ -1500,9 +1503,9 @@
         return "<tr>" +
           '<td class="mono">' + escapeHtml(q.number) + "</td>" +
           (hideClient ? "" : '<td><a href="#/clientes/' + encodeURIComponent(q.clientId) + '">' + escapeHtml(clientName(q.clientId)) + "</a></td>") +
-          "<td>" + (q.materialType ? escapeHtml(q.materialType) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
+          '<td><input class="input input-sm" list="dl-materiais-global" placeholder="—" data-inline-material data-kind="orcamento" data-id="' + q.id + '" value="' + escapeHtml(q.materialType || "") + '"></td>' +
           "<td>" + descCell(q.description, q.clientRef ? '<div class="desc-sub">Ref. cliente: ' + escapeHtml(q.clientRef) + "</div>" : "") + "</td>" +
-          "<td>" + chip(QUOTE_STATUS, q.status) + "</td>" +
+          '<td><select class="input input-sm" data-inline-status data-kind="orcamento" data-id="' + q.id + '">' + selectOptions(QUOTE_STATUS, q.status) + "</select></td>" +
           '<td class="num mono">' + fmtMoney(q.amount) + "</td>" +
           "<td>" + fmtDate(q.validUntil) + "</td>" +
           '<td class="row-actions">' + (q.pdfData ? '<button class="btn btn-sm" data-open-pdf="orcamento" data-id="' + q.id + '" title="Abrir PDF original">📄 PDF</button>' : "") + '<button class="btn btn-sm" data-open-form="orcamento" data-id="' + q.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="orcamento" data-id="' + q.id + '">Eliminar</button></td>' +
@@ -2017,6 +2020,36 @@
         var id = el.getAttribute("data-id");
         var record = kind === "encomenda" ? state.orders.find(function (x) { return x.id === id; }) : state.quotes.find(function (x) { return x.id === id; });
         if (record) openStoredPdf(record.pdfData, record.pdfFileName);
+      });
+    });
+    content.querySelectorAll("[data-inline-material]").forEach(function (el) {
+      el.addEventListener("change", function (e) {
+        e.stopPropagation();
+        var kind = el.getAttribute("data-kind"), id = el.getAttribute("data-id");
+        var rec = (kind === "orcamento" ? state.quotes : state.orders).find(function (x) { return x.id === id; });
+        if (!rec) return;
+        rec.materialType = el.value.trim();
+        scheduleSave(); render();
+      });
+    });
+    content.querySelectorAll("[data-inline-status]").forEach(function (el) {
+      el.addEventListener("change", function (e) {
+        e.stopPropagation();
+        var kind = el.getAttribute("data-kind"), id = el.getAttribute("data-id");
+        var rec = (kind === "orcamento" ? state.quotes : state.orders).find(function (x) { return x.id === id; });
+        if (!rec) return;
+        rec.status = el.value;
+        scheduleSave(); render();
+      });
+    });
+    content.querySelectorAll("[data-inline-due]").forEach(function (el) {
+      el.addEventListener("change", function (e) {
+        e.stopPropagation();
+        var id = el.getAttribute("data-id");
+        var rec = state.orders.find(function (x) { return x.id === id; });
+        if (!rec) return;
+        rec.dueDate = el.value;
+        scheduleSave(); render();
       });
     });
     content.querySelectorAll("[data-client-tab]").forEach(function (el) {
@@ -2678,6 +2711,8 @@
     if (removeDuplicatesBtn) removeDuplicatesBtn.addEventListener("click", removeDuplicateRecords);
     var fillMaterialTypesBtn = document.getElementById("fill-material-types-btn");
     if (fillMaterialTypesBtn) fillMaterialTypesBtn.addEventListener("click", fillMissingMaterialTypes);
+    var materialDatalist = document.getElementById("dl-materiais-global");
+    if (materialDatalist) materialDatalist.innerHTML = KNOWN_MATERIAIS.map(function (v) { return '<option value="' + escapeHtml(v) + '">'; }).join("");
     var applyVoltaPlanBtn = document.getElementById("apply-volta-plan-btn");
     if (applyVoltaPlanBtn) applyVoltaPlanBtn.addEventListener("click", function () {
       confirmAction(
