@@ -240,6 +240,13 @@
   .btn-ghost { border-color: transparent; background: none; padding: 8px 10px; }
   .btn-ghost:hover { background: var(--surface-2); }
   .btn-sm { padding: 5px 10px; font-size: 12.5px; border-radius: 7px; }
+  .btn-toggle-warning { color: var(--warning); }
+  .btn-toggle-warning.active { background: var(--warning-soft); border-color: var(--warning); }
+  .filter-clear-link { font-size: 12.5px; color: var(--ink-muted); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 8px 2px; }
+  .filter-clear-link:hover { color: var(--ink); }
+  tr.row-price-review td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
+  tr.row-price-review { background: var(--warning-soft); }
+  tr.row-price-review:nth-child(even) { background: var(--warning-soft); }
   .btn:disabled { opacity: 0.5; cursor: default; }
 
   /* Stat cards */
@@ -1442,7 +1449,13 @@
   }
 
   /* ============ Orders page ============ */
-  var orderFilter = { status: "", q: "" };
+  var orderFilter = { status: "", q: "", docStatus: "", material: "", priceReview: false };
+  function uniqueSorted(values) {
+    var seen = {}; var out = [];
+    values.forEach(function (v) { if (!seen[v]) { seen[v] = true; out.push(v); } });
+    out.sort(function (a, b) { return String(a).localeCompare(String(b), "pt", { sensitivity: "base" }); });
+    return out;
+  }
   function tableOrders(list, hideClient, sortable) {
     var head = sortable
       ? sortTh("Doc.", "doc", orderSort, "orders") + (hideClient ? "" : sortTh("Cliente", "client", orderSort, "orders")) +
@@ -1451,13 +1464,14 @@
     return '<div class="table-wrap"><table><thead><tr>' + head + "</tr></thead><tbody>" +
       list.map(function (o) {
         var docStatusLabel = o.docStatus ? statusMeta(ORDER_DOC_STATUS, o.docStatus).label : "";
-        return "<tr>" +
+        var priceReview = !o.amount;
+        return '<tr' + (priceReview ? ' class="row-price-review"' : "") + '>' +
           '<td class="mono">' + (o.documentNumber ? escapeHtml(o.documentNumber) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
           (hideClient ? "" : '<td><a href="#/clientes/' + encodeURIComponent(o.clientId) + '">' + escapeHtml(clientName(o.clientId)) + "</a></td>") +
           '<td><input class="input input-sm" list="dl-materiais-global" placeholder="—" data-inline-material data-kind="encomenda" data-id="' + o.id + '" value="' + escapeHtml(o.materialType || "") + '"></td>' +
           "<td>" + descCell(o.description) + "</td>" +
           '<td><select class="input input-sm" data-inline-status data-kind="encomenda" data-id="' + o.id + '">' + selectOptions(ORDER_STATUS, o.status) + "</select>" + (docStatusLabel ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:3px;">' + escapeHtml(docStatusLabel) + "</div>" : "") + "</td>" +
-          '<td class="num mono">' + fmtMoney(o.amount) + "</td>" +
+          '<td class="num mono">' + (priceReview ? '<span class="chip chip-warning" title="Preço a rever">⚠ a rever</span>' : fmtMoney(o.amount)) + "</td>" +
           "<td>" + fmtDate(o.date) + "</td>" +
           '<td><input type="date" class="input input-sm" data-inline-due data-id="' + o.id + '" value="' + (o.dueDate || "") + '"></td>' +
           '<td class="row-actions">' + (o.pdfData ? '<button class="btn btn-sm" data-open-pdf="encomenda" data-id="' + o.id + '" title="Abrir PDF original">📄 PDF</button>' : "") + '<button class="btn btn-sm" data-open-form="encomenda" data-id="' + o.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="encomenda" data-id="' + o.id + '">Eliminar</button></td>' +
@@ -1465,11 +1479,16 @@
       }).join("") + "</tbody></table></div>";
   }
   function renderOrders() {
+    var priceReviewCount = state.orders.filter(function (o) { return !o.amount; }).length;
     var list = state.orders.filter(function (o) {
       if (orderFilter.status && o.status !== orderFilter.status) return false;
+      if (orderFilter.docStatus && o.docStatus !== orderFilter.docStatus) return false;
+      if (orderFilter.material && (o.materialType || "") !== orderFilter.material) return false;
+      if (orderFilter.priceReview && o.amount) return false;
       if (orderFilter.q) {
         var q = orderFilter.q.toLowerCase();
-        return clientName(o.clientId).toLowerCase().indexOf(q) > -1 || (o.description || "").toLowerCase().indexOf(q) > -1 || (o.documentNumber || "").toLowerCase().indexOf(q) > -1 || (o.materialType || "").toLowerCase().indexOf(q) > -1;
+        if (clientName(o.clientId).toLowerCase().indexOf(q) === -1 && (o.description || "").toLowerCase().indexOf(q) === -1 &&
+          (o.documentNumber || "").toLowerCase().indexOf(q) === -1 && (o.materialType || "").toLowerCase().indexOf(q) === -1) return false;
       }
       return true;
     });
@@ -1481,13 +1500,21 @@
       date: function (o) { return o.date || ""; },
       due: function (o) { return o.dueDate || ""; }
     });
+    var materialValues = uniqueSorted(state.orders.map(function (o) { return o.materialType; }).filter(Boolean));
+    var filtersActive = orderFilter.status || orderFilter.docStatus || orderFilter.material || orderFilter.priceReview || orderFilter.q;
+    var subText = filtersActive ? list.length + " de " + state.orders.length + " no total" : state.orders.length + " no total";
 
     return (
-      '<div class="page-head"><div><h1>Encomendas</h1><div class="sub">' + state.orders.length + " no total</div></div>" +
+      '<div class="page-head"><div><h1>Encomendas</h1><div class="sub">' + subText + "</div></div>" +
       '<div class="head-actions"><button class="btn btn-primary" data-import-open="encomenda">📥 Importar ficheiro</button><button class="btn" id="export-orders-csv-btn">⭳ Exportar encomendas</button></div></div>' +
       '<div class="search-row"><input class="input search-input" id="order-search" placeholder="Pesquisar por cliente, descrição, doc. ou material…" value="' + escapeHtml(orderFilter.q) + '">' +
-      '<select class="input filter-input" id="order-status-filter"><option value="">Todos os estados</option>' + Object.keys(ORDER_STATUS).map(function (k) { return '<option value="' + k + '"' + (orderFilter.status === k ? " selected" : "") + ">" + ORDER_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
-      '<div class="panel"><div class="panel-body">' + (list.length ? tableOrders(list, false, true) : emptyState("Sem encomendas para mostrar.")) + "</div></div>"
+      '<select class="input filter-input" id="order-status-filter"><option value="">Todos os estados</option>' + Object.keys(ORDER_STATUS).map(function (k) { return '<option value="' + k + '"' + (orderFilter.status === k ? " selected" : "") + ">" + ORDER_STATUS[k].label + "</option>"; }).join("") + "</select>" +
+      '<select class="input filter-input" id="order-docstatus-filter"><option value="">Todos os docs.</option>' + Object.keys(ORDER_DOC_STATUS).map(function (k) { return '<option value="' + k + '"' + (orderFilter.docStatus === k ? " selected" : "") + ">" + ORDER_DOC_STATUS[k].label + "</option>"; }).join("") + "</select>" +
+      '<select class="input filter-input" id="order-material-filter"><option value="">Todos os materiais</option>' + materialValues.map(function (m) { return '<option value="' + escapeHtml(m) + '"' + (orderFilter.material === m ? " selected" : "") + ">" + escapeHtml(m) + "</option>"; }).join("") + "</select>" +
+      '<button class="btn btn-toggle-warning' + (orderFilter.priceReview ? " active" : "") + '" id="order-pricereview-filter">⚠ Preço a rever' + (priceReviewCount ? " (" + priceReviewCount + ")" : "") + "</button>" +
+      (filtersActive ? '<button class="filter-clear-link" id="order-filters-clear">Limpar filtros</button>' : "") +
+      "</div>" +
+      '<div class="panel"><div class="panel-body">' + (list.length ? tableOrders(list, false, true) : emptyState(filtersActive ? "Sem encomendas para os filtros escolhidos." : "Sem encomendas para mostrar.")) + "</div></div>"
     );
   }
 
@@ -2073,6 +2100,14 @@
     if (orderSearch) orderSearch.addEventListener("input", debounce(function (e) { orderFilter.q = e.target.value; render(); restoreFocus("order-search"); }, 200));
     var orderStatusFilter = document.getElementById("order-status-filter");
     if (orderStatusFilter) orderStatusFilter.addEventListener("change", function (e) { orderFilter.status = e.target.value; render(); });
+    var orderDocStatusFilter = document.getElementById("order-docstatus-filter");
+    if (orderDocStatusFilter) orderDocStatusFilter.addEventListener("change", function (e) { orderFilter.docStatus = e.target.value; render(); });
+    var orderMaterialFilter = document.getElementById("order-material-filter");
+    if (orderMaterialFilter) orderMaterialFilter.addEventListener("change", function (e) { orderFilter.material = e.target.value; render(); });
+    var orderPriceReviewFilter = document.getElementById("order-pricereview-filter");
+    if (orderPriceReviewFilter) orderPriceReviewFilter.addEventListener("click", function () { orderFilter.priceReview = !orderFilter.priceReview; render(); });
+    var orderFiltersClear = document.getElementById("order-filters-clear");
+    if (orderFiltersClear) orderFiltersClear.addEventListener("click", function () { orderFilter = { status: "", q: "", docStatus: "", material: "", priceReview: false }; render(); });
 
     var quoteSearch = document.getElementById("quote-search");
     if (quoteSearch) quoteSearch.addEventListener("input", debounce(function (e) { quoteFilter.q = e.target.value; render(); restoreFocus("quote-search"); }, 200));
