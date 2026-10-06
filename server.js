@@ -128,11 +128,14 @@ async function ensureSchema() {
   }
 }
 
+// Start listening even if the database is unreachable, so the page still loads
+// and the browser can fall back to its local copy of the data (the API
+// returns 500 "db_error" until the database is available again).
 ensureSchema()
-  .then(() => {
-    app.listen(PORT, () => console.log("Listening on port " + PORT));
-  })
+  .then(() => console.log("Database ready."))
   .catch((err) => {
     console.error("Failed to initialize database", err);
-    process.exit(1);
+  })
+  .finally(() => {
+    app.listen(PORT, () => console.log("Listening on port " + PORT));
   });
