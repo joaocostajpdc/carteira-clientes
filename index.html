@@ -1718,7 +1718,7 @@
       var list = visitsOn(calSelected);
       var nDone = list.filter(function (v) { return v.status === "realizada"; }).length;
       html += '<div class="panel"><div class="agenda-head"><div><h2>' + fmtLongDay(calSelected) + '</h2><div class="sub">' +
-        (list.length ? list.length + " visitas · " + nDone + " feitas" + (list[0].time ? " · saída 9:15" : "") : "Sem visitas neste dia") + "</div></div>" +
+        (list.length ? list.length + " visitas · " + nDone + " feitas" + (list[0].time ? " · " + (list[0].time >= "13:00" ? "só de tarde, " : "") + "das " + list[0].time + " às ~" + (function () { var m = /fim ~(\d{1,2}:\d{2})/.exec(list[list.length - 1].notes || ""); return m ? m[1] : list[list.length - 1].time; })() : "") : "Sem visitas neste dia") + "</div></div>" +
         '<button class="btn btn-sm" data-open-form="visita" data-date="' + calSelected + '">+ Visita neste dia</button></div>';
       var lunchShown = false;
       list.forEach(function (v) {
