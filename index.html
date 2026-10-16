@@ -354,6 +354,55 @@
   .chip-warning { background: var(--warning-soft); color: var(--warning); }
   .chip-danger { background: var(--danger-soft); color: var(--danger); }
 
+  /* Calendário de visitas (2026-10-15) */
+  .view-toggle { display: inline-flex; border: 1px solid var(--sand-strong); border-radius: 8px; overflow: hidden; }
+  .view-toggle button { border: 0; background: var(--surface); color: var(--ink-muted); padding: 7px 14px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .view-toggle button.active { background: var(--teal); color: #fff; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--sand); flex-wrap: wrap; }
+  .cal-head h2 { font-size: 17px; text-transform: capitalize; }
+  .cal-nav { display: flex; gap: 6px; align-items: center; }
+  .cal-legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-muted); }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .cal-legend i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+  .cal-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) repeat(2, minmax(0, 0.45fr)); }
+  .cal-dow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); padding: 8px 10px; border-bottom: 1px solid var(--sand); }
+  .cal-cell { min-height: 112px; padding: 7px 8px; border-right: 1px solid var(--sand); border-bottom: 1px solid var(--sand); cursor: pointer; background: var(--surface); text-align: left; font: inherit; color: inherit; border-top: 0; border-left: 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .cal-cell:hover { background: var(--surface-2); }
+  .cal-cell.out { background: var(--surface-2); color: var(--ink-muted); opacity: 0.55; }
+  .cal-cell.weekend { background: var(--surface-2); }
+  .cal-cell.today .cal-num { background: var(--teal); color: #fff; }
+  .cal-cell.selected { box-shadow: inset 0 0 0 2px var(--teal); }
+  .cal-cell-top { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+  .cal-num { font-size: 12.5px; font-weight: 700; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+  .cal-count { font-size: 11px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .cal-tags { display: flex; gap: 3px; flex-wrap: wrap; }
+  .cal-tag { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; color: #fff; }
+  .cal-tag.v1 { background: #2b5ea8; } .cal-tag.v2 { background: #2f7a52; } .cal-tag.v3 { background: #a8722a; } .cal-tag.v4 { background: #7a4bb0; } .cal-tag.vx { background: #6b7a94; }
+  .cal-mini { font-size: 11.5px; line-height: 1.35; color: var(--ink-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .cal-mini b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cal-mini.done { text-decoration: line-through; opacity: 0.6; }
+  .cal-progress { height: 4px; border-radius: 4px; background: var(--sand); overflow: hidden; margin-top: auto; }
+  .cal-progress i { display: block; height: 100%; background: var(--success); }
+  .agenda-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--sand); }
+  .agenda-head h2 { font-size: 16px; }
+  .agenda-head h2::first-letter { text-transform: uppercase; }
+  .agenda-head .sub { font-size: 12.5px; color: var(--ink-muted); }
+  .agenda-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 18px; border-bottom: 1px solid var(--sand); }
+  .agenda-row:last-child { border-bottom: 0; }
+  .agenda-time { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--teal-strong); }
+  .agenda-client { font-weight: 600; min-width: 0; }
+  .agenda-client a { color: inherit; }
+  .agenda-meta { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+  .agenda-row.done .agenda-client { text-decoration: line-through; color: var(--ink-muted); }
+  .agenda-lunch { padding: 6px 18px; font-size: 12px; color: var(--ink-muted); background: var(--surface-2); border-bottom: 1px solid var(--sand); }
+  @media (max-width: 860px) {
+    .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+    .cal-cell { min-height: 58px; padding: 4px; }
+    .cal-mini, .cal-tags { display: none; }
+    .agenda-row { grid-template-columns: 48px minmax(0, 1fr); }
+    .agenda-row .row-actions { grid-column: 1 / -1; justify-content: flex-start; }
+  }
+
   /* Voltas */
   .volta-row { padding: 14px 18px; border-bottom: 1px solid var(--sand); }
   .volta-row:last-child { border-bottom: none; }
@@ -1568,23 +1617,136 @@
 
   /* ============ Visits page ============ */
   var visitFilter = { status: "", q: "" };
+  var presetVisitDate = null;
   function tableVisits(list, hideClient, sortable) {
     var head = sortable
-      ? sortTh("Data", "date", visitSort, "visits") + (hideClient ? "" : sortTh("Cliente", "client", visitSort, "visits")) + "<th>Motivo</th><th>Estado</th>" + sortTh("Próxima visita", "next", visitSort, "visits") + "<th></th>"
-      : "<th>Data</th>" + (hideClient ? "" : "<th>Cliente</th>") + "<th>Motivo</th><th>Estado</th><th>Próxima visita</th><th></th>";
+      ? sortTh("Data", "date", visitSort, "visits") + "<th>Hora</th>" + (hideClient ? "" : sortTh("Cliente", "client", visitSort, "visits")) + "<th>Motivo</th><th>Estado</th>" + sortTh("Próxima visita", "next", visitSort, "visits") + "<th></th>"
+      : "<th>Data</th><th>Hora</th>" + (hideClient ? "" : "<th>Cliente</th>") + "<th>Motivo</th><th>Estado</th><th>Próxima visita</th><th></th>";
     return '<div class="table-wrap"><table><thead><tr>' + head + "</tr></thead><tbody>" +
       list.map(function (v) {
         return "<tr>" +
           "<td>" + fmtDate(v.date) + "</td>" +
+          '<td style="font-variant-numeric:tabular-nums">' + (v.time ? escapeHtml(v.time) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
           (hideClient ? "" : '<td><a href="#/clientes/' + encodeURIComponent(v.clientId) + '">' + escapeHtml(clientName(v.clientId)) + "</a></td>") +
-          "<td>" + escapeHtml(v.purpose) + (v.result ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:2px;">' + escapeHtml(v.result) + "</div>" : "") + "</td>" +
+          "<td>" + escapeHtml(v.purpose) + (v.notes ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:2px;">' + escapeHtml(v.notes) + "</div>" : "") + (v.result ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:2px;">' + escapeHtml(v.result) + "</div>" : "") + "</td>" +
           "<td>" + chip(VISIT_STATUS, v.status) + "</td>" +
           "<td>" + (v.nextVisit ? fmtDate(v.nextVisit) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
           '<td class="row-actions"><button class="btn btn-sm" data-open-form="visita" data-id="' + v.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="visita" data-id="' + v.id + '">Eliminar</button></td>' +
           "</tr>";
       }).join("") + "</tbody></table></div>";
   }
+  /* ---------- Calendário de visitas ---------- */
+  var visitView = "cal";
+  var calMonth = null; // "AAAA-MM"
+  var calSelected = null; // "AAAA-MM-DD"
+  var MONTHS_PT = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+  var DOW_PT = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
+
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function isoOf(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function shortClientName(name) {
+    return (name || "")
+      .replace(/\s*[-–]\s*(serralharia|caixilharia).*$/i, "")
+      .replace(/,?\s*(unipessoal|limitada|lda\.?)\b/gi, "")
+      .replace(/\s{2,}/g, " ").replace(/[,\s]+$/, "").trim();
+  }
+  function voltaClass(c, visit) {
+    var fromNotes = visit && /^Volta\s*([1-4])\b/i.exec(visit.notes || "");
+    if (fromNotes) return "v" + fromNotes[1];
+    var v = c && String(c.volta || "").trim();
+    return /^[1-4]$/.test(v) ? "v" + v : "vx";
+  }
+  function visitsOn(day) {
+    return state.visits.filter(function (v) { return v.date === day && v.status !== "cancelada"; })
+      .sort(function (a, b) { return (a.time || "99").localeCompare(b.time || "99"); });
+  }
+  function fmtLongDay(iso) {
+    var d = new Date(iso + "T00:00:00");
+    return new Intl.DateTimeFormat("pt-PT", { weekday: "long", day: "numeric", month: "long" }).format(d);
+  }
+
+  function renderVisitCalendar() {
+    if (!calMonth && state.visits.length) {
+      var t = todayISO();
+      // Abre no mês com a próxima visita agendada (ex.: o plano de novembro), senão no mês atual.
+      var next = state.visits.filter(function (v) { return v.status === "agendada" && v.date >= t; })
+        .map(function (v) { return v.date; }).sort()[0];
+      calMonth = (next || t).slice(0, 7);
+      calSelected = next || t;
+    }
+    var cm = calMonth || todayISO().slice(0, 7);
+    var y = parseInt(cm.slice(0, 4), 10), m = parseInt(cm.slice(5, 7), 10) - 1;
+    var first = new Date(y, m, 1);
+    var start = new Date(y, m, 1 - ((first.getDay() + 6) % 7));
+    var today = todayISO();
+    var monthVisits = state.visits.filter(function (v) { return (v.date || "").slice(0, 7) === cm && v.status !== "cancelada"; });
+    var done = monthVisits.filter(function (v) { return v.status === "realizada"; }).length;
+
+    var cells = DOW_PT.map(function (d) { return '<div class="cal-dow">' + d + "</div>"; }).join("");
+    for (var i = 0; i < 42; i++) {
+      var d = new Date(start); d.setDate(start.getDate() + i);
+      if (i >= 35 && d.getMonth() !== m) break;
+      var iso = isoOf(d);
+      var dayVisits = visitsOn(iso);
+      var dayDone = dayVisits.filter(function (v) { return v.status === "realizada"; }).length;
+      var voltas = [];
+      dayVisits.forEach(function (v) { var k = voltaClass(clientById(v.clientId), v); if (voltas.indexOf(k) < 0) voltas.push(k); });
+      voltas.sort();
+      var cls = "cal-cell" + (d.getMonth() !== m ? " out" : "") + (d.getDay() === 0 || d.getDay() === 6 ? " weekend" : "") +
+        (iso === today ? " today" : "") + (iso === calSelected ? " selected" : "");
+      var mini = dayVisits.slice(0, 3).map(function (v) {
+        return '<div class="cal-mini' + (v.status === "realizada" ? " done" : "") + '">' + (v.time ? "<b>" + escapeHtml(v.time) + "</b> " : "") + escapeHtml(shortClientName(clientName(v.clientId))) + "</div>";
+      }).join("") + (dayVisits.length > 3 ? '<div class="cal-mini">+' + (dayVisits.length - 3) + " mais</div>" : "");
+      cells += '<button type="button" class="' + cls + '" data-cal-day="' + iso + '">' +
+        '<div class="cal-cell-top"><span class="cal-num">' + d.getDate() + "</span>" +
+        (dayVisits.length ? '<span class="cal-count">' + dayDone + "/" + dayVisits.length + "</span>" : "") + "</div>" +
+        (voltas.length ? '<div class="cal-tags">' + voltas.map(function (k) { return '<span class="cal-tag ' + k + '">' + (k === "vx" ? "Outros" : "V" + k.slice(1)) + "</span>"; }).join("") + "</div>" : "") +
+        mini +
+        (dayVisits.length ? '<div class="cal-progress"><i style="width:' + Math.round(100 * dayDone / dayVisits.length) + '%"></i></div>' : "") +
+        "</button>";
+    }
+
+    var html = '<div class="panel">' +
+      '<div class="cal-head"><div><h2>' + MONTHS_PT[m] + " " + y + '</h2><div class="sub" style="font-size:12.5px;color:var(--ink-muted)">' +
+      monthVisits.length + " visitas · " + done + " feitas</div></div>" +
+      '<div class="cal-legend"><span><i style="background:#2b5ea8"></i>Volta 1</span><span><i style="background:#2f7a52"></i>Volta 2</span><span><i style="background:#a8722a"></i>Volta 3</span><span><i style="background:#7a4bb0"></i>Volta 4</span></div>' +
+      '<div class="cal-nav"><button class="btn btn-sm" data-cal-nav="-1" aria-label="Mês anterior">‹</button><button class="btn btn-sm" data-cal-nav="0">Hoje</button><button class="btn btn-sm" data-cal-nav="1" aria-label="Mês seguinte">›</button></div></div>' +
+      '<div class="cal-grid">' + cells + "</div></div>";
+
+    // Agenda do dia selecionado
+    if (calSelected) {
+      var list = visitsOn(calSelected);
+      var nDone = list.filter(function (v) { return v.status === "realizada"; }).length;
+      html += '<div class="panel"><div class="agenda-head"><div><h2>' + fmtLongDay(calSelected) + '</h2><div class="sub">' +
+        (list.length ? list.length + " visitas · " + nDone + " feitas" + (list[0].time ? " · saída 9:15" : "") : "Sem visitas neste dia") + "</div></div>" +
+        '<button class="btn btn-sm" data-open-form="visita" data-date="' + calSelected + '">+ Visita neste dia</button></div>';
+      var lunchShown = false;
+      list.forEach(function (v) {
+        var c = clientById(v.clientId);
+        if (!lunchShown && v.time && v.time >= "13:00" && list[0].time && list[0].time < "13:00") {
+          html += '<div class="agenda-lunch">🍽️ Almoço 12:15 – 13:00</div>'; lunchShown = true;
+        }
+        var isDone = v.status === "realizada";
+        html += '<div class="agenda-row' + (isDone ? " done" : "") + '">' +
+          '<div class="agenda-time">' + (v.time ? escapeHtml(v.time) : "—") + "</div>" +
+          '<div style="min-width:0"><div class="agenda-client"><a href="#/clientes/' + encodeURIComponent(v.clientId) + '">' + escapeHtml(shortClientName(clientName(v.clientId))) + "</a></div>" +
+          '<div class="agenda-meta">' + escapeHtml(v.notes || (c && c.zona) || "") + "</div></div>" +
+          '<div class="row-actions">' + chip(VISIT_STATUS, v.status) +
+          (isDone ? "" : '<button class="btn btn-sm" data-visit-done="' + v.id + '">✓ Feita</button>') +
+          '<button class="btn btn-sm" data-open-form="visita" data-id="' + v.id + '">Editar</button></div></div>';
+      });
+      html += "</div>";
+    }
+    return html;
+  }
+
   function renderVisits() {
+    var toggle = '<div class="view-toggle"><button data-visit-view="cal" class="' + (visitView === "cal" ? "active" : "") + '">Calendário</button><button data-visit-view="list" class="' + (visitView === "list" ? "active" : "") + '">Lista</button></div>';
+    if (visitView === "cal") {
+      return '<div class="page-head"><div><h1>Visitas</h1><div class="sub">' + state.visits.length + " no total</div></div>" +
+        '<div class="head-actions" style="display:flex;gap:8px;align-items:center">' + toggle + '<button class="btn btn-primary" data-open-form="visita">+ Agendar visita</button></div></div>' +
+        renderVisitCalendar();
+    }
     var list = state.visits.filter(function (v) {
       if (visitFilter.status && v.status !== visitFilter.status) return false;
       if (visitFilter.q) {
@@ -1594,14 +1756,14 @@
       return true;
     });
     list = applySort(list, visitSort, {
-      date: function (v) { return v.date || ""; },
+      date: function (v) { return (v.date || "") + " " + (v.time || ""); },
       client: function (v) { return clientName(v.clientId); },
       next: function (v) { return v.nextVisit || ""; }
     });
 
     return (
       '<div class="page-head"><div><h1>Visitas</h1><div class="sub">' + state.visits.length + " no total</div></div>" +
-      '<div class="head-actions"><button class="btn btn-primary" data-open-form="visita">+ Agendar visita</button></div></div>' +
+      '<div class="head-actions" style="display:flex;gap:8px;align-items:center">' + toggle + '<button class="btn btn-primary" data-open-form="visita">+ Agendar visita</button></div></div>' +
       '<div class="search-row"><input class="input search-input" id="visit-search" placeholder="Pesquisar por cliente ou motivo…" value="' + escapeHtml(visitFilter.q) + '">' +
       '<select class="input filter-input" id="visit-status-filter"><option value="">Todos os estados</option>' + Object.keys(VISIT_STATUS).map(function (k) { return '<option value="' + k + '"' + (visitFilter.status === k ? " selected" : "") + ">" + VISIT_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
       '<div class="panel"><div class="panel-body">' + (list.length ? tableVisits(list, false, true) : emptyState("Sem visitas para mostrar.")) + "</div></div>"
@@ -1785,7 +1947,8 @@
       bodyHtml =
         field("Cliente", '<select class="input" id="f-client" required>' + clientOptions(v ? v.clientId : presetClientId) + "</select>", true) +
         '<div class="field-row">' +
-          field("Data", '<input class="input" type="date" id="f-date" value="' + (v ? v.date : todayISO()) + '">') +
+          field("Data", '<input class="input" type="date" id="f-date" value="' + (v ? v.date : (presetVisitDate || todayISO())) + '">') +
+          field("Hora", '<input class="input" type="time" id="f-time" value="' + escapeHtml(v ? v.time || "" : "") + '">') +
           field("Estado", '<select class="input" id="f-status">' + selectOptions(VISIT_STATUS, v ? v.status : "agendada") + "</select>") +
         "</div>" +
         field("Motivo", '<input class="input" id="f-purpose" value="' + escapeHtml(v ? v.purpose : "") + '" required placeholder="Ex.: apresentação de produto, follow-up…">', true) +
@@ -1866,7 +2029,7 @@
     var v = id ? state.visits.find(function (x) { return x.id === id; }) : null;
     if (!v) { v = { id: uid("vis"), createdAt: new Date().toISOString() }; state.visits.push(v); }
     v.clientId = clientId; v.purpose = purpose; v.date = val("f-date") || todayISO(); v.status = val("f-status");
-    v.result = val("f-result"); v.nextVisit = val("f-nextvisit"); v.notes = val("f-notes");
+    v.result = val("f-result"); v.nextVisit = val("f-nextvisit"); v.notes = val("f-notes"); v.time = val("f-time");
     scheduleSave(); render();
     toast(id ? "Visita atualizada." : "Visita agendada.");
   }
@@ -2029,8 +2192,40 @@
     content.querySelectorAll("[data-goto-client]").forEach(function (el) {
       el.addEventListener("click", function () { navigate("/clientes/" + encodeURIComponent(el.getAttribute("data-goto-client"))); });
     });
+    content.querySelectorAll("[data-visit-view]").forEach(function (el) {
+      el.addEventListener("click", function () { visitView = el.getAttribute("data-visit-view"); render(); });
+    });
+    content.querySelectorAll("[data-cal-nav]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var step = parseInt(el.getAttribute("data-cal-nav"), 10);
+        if (step === 0) { calMonth = todayISO().slice(0, 7); calSelected = todayISO(); }
+        else {
+          var cm = calMonth || todayISO().slice(0, 7);
+          var y = parseInt(cm.slice(0, 4), 10), m = parseInt(cm.slice(5, 7), 10) - 1 + step;
+          var d = new Date(y, m, 1);
+          calMonth = d.getFullYear() + "-" + pad2(d.getMonth() + 1);
+        }
+        render();
+      });
+    });
+    content.querySelectorAll("[data-cal-day]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        calSelected = el.getAttribute("data-cal-day");
+        if (calSelected.slice(0, 7) !== calMonth) calMonth = calSelected.slice(0, 7);
+        render();
+      });
+    });
+    content.querySelectorAll("[data-visit-done]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var v = state.visits.find(function (x) { return x.id === el.getAttribute("data-visit-done"); });
+        if (!v) return;
+        v.status = "realizada";
+        scheduleSave(); render(); toast("Visita marcada como feita.");
+      });
+    });
     content.querySelectorAll("[data-open-form]").forEach(function (el) {
       el.addEventListener("click", function () {
+        presetVisitDate = el.getAttribute("data-date") || null;
         openForm(el.getAttribute("data-open-form"), el.getAttribute("data-id") || null, el.getAttribute("data-client") || null);
       });
     });
