@@ -1,0 +1,13 @@
+{
+  "name": "orcamentos-jpdc",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Programa de orçamentação — chapas quinadas e painéis (Minho Ferragens)",
+  "engines": { "node": ">=18" },
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.11.5",
+    "cookie-parser": "^1.4.6"
+  }
+}
