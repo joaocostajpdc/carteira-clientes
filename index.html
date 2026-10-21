@@ -1,30 +1,30 @@
 <title>Carteira de Clientes</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
-    --paper: #eef2f9;
+    --paper: #f3f4f8;
     --surface: #ffffff;
-    --surface-2: #f6f8fc;
-    --ink: #131d2e;
-    --ink-muted: #566a8c;
-    --sand: #dbe3f0;
-    --sand-strong: #c1cee4;
-    --teal: #2b5ea8;
-    --teal-strong: #163f7a;
-    --teal-soft: #e3ecfa;
+    --surface-2: #f7f8fb;
+    --ink: #1b2033;
+    --ink-muted: #5f6b85;
+    --sand: #e4e6ed;
+    --sand-strong: #cdd2df;
+    --teal: #1f3fe0;
+    --teal-strong: #16309e;
+    --teal-soft: #eef1ff;
     --series-2: #eb6834;
     --series-2-strong: #a8481f;
     --series-2-soft: #fbe6db;
-    --success: #2f7a52;
-    --success-soft: #e2f2e8;
-    --warning: #a8722a;
-    --warning-soft: #f5ead9;
-    --danger: #b5453a;
-    --danger-soft: #f6e4e1;
-    --shadow: 0 1px 2px rgba(19,29,46,0.07), 0 6px 20px -8px rgba(19,29,46,0.2);
-    --radius: 10px;
+    --success: #1f7a4a;
+    --success-soft: #e3f4ea;
+    --warning: #a15c07;
+    --warning-soft: #fdf1dc;
+    --danger: #b42318;
+    --danger-soft: #fdecea;
+    --shadow: 0 1px 2px rgba(20,24,45,0.06), 0 4px 14px rgba(20,24,45,0.06);
+    --radius: 12px;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
@@ -82,19 +82,19 @@
     margin: 0;
     background: var(--paper);
     color: var(--ink);
-    font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: "Inter", system-ui, sans-serif;
     font-size: 14.5px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, .display {
-    font-family: "Fraunces", Georgia, "Times New Roman", serif;
+    font-family: "Inter", system-ui, sans-serif;
     font-weight: 600;
     letter-spacing: -0.01em;
     text-wrap: balance;
     margin: 0;
   }
-  .mono, .num { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace; font-variant-numeric: tabular-nums; }
+  .mono, .num { font-family: "Inter", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
   a { color: var(--teal); }
   button { font-family: inherit; }
   ::selection { background: var(--teal-soft); }
@@ -133,13 +133,13 @@
     background: var(--teal);
     color: var(--surface);
     display: flex; align-items: center; justify-content: center;
-    font-family: "Fraunces", serif;
+    font-family: "Inter", system-ui, sans-serif;
     font-weight: 600;
     font-size: 16px;
     flex: none;
   }
   .brand-name {
-    font-family: "Fraunces", serif;
+    font-family: "Inter", system-ui, sans-serif;
     font-weight: 600;
     font-size: 17px;
     line-height: 1.15;
@@ -168,7 +168,7 @@
   .nav-link .ic { width: 17px; text-align: center; flex: none; opacity: 0.9; }
   .nav-link .count {
     margin-left: auto;
-    font-family: "IBM Plex Mono", monospace;
+    font-family: "Inter", system-ui, sans-serif;
     font-size: 11px;
     color: var(--ink-muted);
   }
@@ -256,7 +256,7 @@
     padding: 16px 18px; box-shadow: var(--shadow);
   }
   .stat-card .label { font-size: 12px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-  .stat-card .value { font-family: "Fraunces", serif; font-size: 28px; font-weight: 600; margin-top: 6px; }
+  .stat-card .value { font-family: "Inter", system-ui, sans-serif; font-size: 28px; font-weight: 600; margin-top: 6px; }
   .stat-card .value.small { font-size: 22px; }
   .stat-card .hint { font-size: 12px; color: var(--ink-muted); margin-top: 3px; }
 
@@ -273,9 +273,9 @@
   .chart-legend .lg-swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
   .chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
   .chart-svg .grid-line { stroke: var(--sand); stroke-width: 1; }
-  .chart-svg .axis-label { fill: var(--ink-muted); font-size: 9.5px; font-family: "Public Sans", sans-serif; }
-  .chart-svg .cat-label { fill: var(--ink-muted); font-size: 10px; font-family: "Public Sans", sans-serif; }
-  .chart-svg .val-label { fill: var(--ink); font-size: 10.5px; font-weight: 600; font-family: "IBM Plex Mono", monospace; }
+  .chart-svg .axis-label { fill: var(--ink-muted); font-size: 9.5px; font-family: "Inter", system-ui, sans-serif; }
+  .chart-svg .cat-label { fill: var(--ink-muted); font-size: 10px; font-family: "Inter", system-ui, sans-serif; }
+  .chart-svg .val-label { fill: var(--ink); font-size: 10.5px; font-weight: 600; font-family: "Inter", system-ui, sans-serif; }
   .chart-svg .bar { transition: opacity 0.12s ease; cursor: default; }
   .chart-svg .bar:hover, .chart-svg .bar:focus { opacity: 0.78; outline: none; }
   .chart-svg .bar:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
@@ -286,7 +286,7 @@
     max-width: 220px; opacity: 0; transform: translate(-50%, -100%); transition: opacity 0.08s ease;
   }
   .chart-tooltip.show { opacity: 1; }
-  .chart-tooltip .tt-val { font-family: "IBM Plex Mono", monospace; font-weight: 600; }
+  .chart-tooltip .tt-val { font-family: "Inter", system-ui, sans-serif; font-weight: 600; }
   .chart-tooltip .tt-sub { color: var(--sand-strong); font-size: 11px; margin-top: 1px; }
 
   /* Login gate */
@@ -295,7 +295,7 @@
     width: 100%; max-width: 340px; background: var(--surface); border: 1px solid var(--sand); border-radius: var(--radius);
     box-shadow: var(--shadow); padding: 32px 28px; text-align: center;
   }
-  .login-card .brand-mark { width: 44px; height: 44px; border-radius: 12px; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; font-family: "Fraunces", serif; font-weight: 600; font-size: 20px; }
+  .login-card .brand-mark { width: 44px; height: 44px; border-radius: 12px; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; font-family: "Inter", system-ui, sans-serif; font-weight: 600; font-size: 20px; }
   .login-card h1 { font-size: 19px; margin-bottom: 4px; }
   .login-card .sub { font-size: 13px; color: var(--ink-muted); margin-bottom: 18px; }
   .login-card .input { margin-bottom: 12px; text-align: center; }
@@ -457,7 +457,7 @@
   .client-id-block { display: flex; gap: 14px; align-items: flex-start; }
   .client-avatar {
     width: 52px; height: 52px; border-radius: 12px; background: var(--teal-soft); color: var(--teal-strong);
-    display: flex; align-items: center; justify-content: center; font-family: "Fraunces", serif;
+    display: flex; align-items: center; justify-content: center; font-family: "Inter", system-ui, sans-serif;
     font-size: 20px; font-weight: 600; flex: none;
   }
   .client-meta-list { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: 13px; color: var(--ink-muted); }
@@ -528,6 +528,123 @@
 
   @media (prefers-reduced-motion: reduce) {
     * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+  /* ================= Novo visual (2026-10-21) ================= */
+  body { font-size: 14px; }
+  h1, h2, h3, .display { font-weight: 700; letter-spacing: -0.015em; }
+  .mono, .num { font-variant-numeric: tabular-nums; }
+  .muted { color: var(--ink-muted); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* Menu lateral escuro */
+  .sidebar { background: #161b2c; border-right: 0; color: #fff; width: 248px; padding: 20px 14px; gap: 18px; }
+  .brand { padding: 2px 6px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .brand-mark { background: #fff; color: #1f3fe0; border-radius: 9px; font-weight: 800; font-size: 15px; }
+  .brand-name { font-size: 14.5px; font-weight: 700; color: #fff; }
+  .brand-sub { color: #8b92b3; font-size: 11.5px; }
+  .global-search .input { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); color: #fff; }
+  .global-search .input::placeholder { color: #8b92b3; }
+  .global-search .input:focus { border-color: #6d84ff; background: rgba(255,255,255,0.09); }
+  .nav-section { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6c74a0; padding: 10px 10px 4px; }
+  .nav-link { color: #b9bfd8; font-size: 13.5px; padding: 9px 10px; min-height: 40px; }
+  .nav-link .ic { width: 18px; display: flex; align-items: center; justify-content: center; opacity: 1; }
+  .nav-link:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .nav-link.active { background: #1f3fe0; color: #fff; }
+  .nav-link .count { color: #8b92b3; font-size: 11.5px; }
+  .nav-link.active .count { color: #dfe5ff; }
+  .sidebar-foot { color: #8b92b3; }
+  .sidebar-foot .btn-ghost { color: #b9bfd8; }
+  .sidebar-foot .btn-ghost:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  #save-indicator { font-size: 11.5px; }
+
+  /* Conteúdo */
+  main.content { max-width: 1320px; padding: 26px 32px 60px; }
+  .page-head { margin-bottom: 18px; align-items: center; }
+  .page-head h1 { font-size: 24px; }
+  .btn { border-radius: 8px; font-weight: 600; min-height: 36px; }
+  .btn-sm { min-height: 30px; }
+  .btn-primary { box-shadow: 0 1px 2px rgba(31,63,224,0.25); }
+  .panel { border-radius: 12px; box-shadow: 0 1px 2px rgba(20,24,45,0.05); }
+  .stat-card { border-radius: 12px; box-shadow: 0 1px 2px rgba(20,24,45,0.05); }
+  .stat-card .label { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 12.5px; }
+  .stat-card .value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .chart-card { border-radius: 12px; box-shadow: 0 1px 2px rgba(20,24,45,0.05); }
+
+  /* Tabelas */
+  .table-wrap { max-height: calc(100vh - 290px); overflow: auto; }
+  thead th { position: sticky; top: 0; z-index: 2; background: var(--surface); text-transform: none; letter-spacing: 0; font-size: 12px; color: var(--ink-muted); padding: 10px 14px; box-shadow: inset 0 -1px 0 var(--sand); border-bottom: 0; }
+  tbody td { padding: 10px 14px; vertical-align: middle; }
+  tbody tr:nth-child(even) { background: transparent; }
+  tbody tr:nth-child(even):hover, tbody tr:hover { background: var(--surface-2); }
+  tbody tr.clickable:hover .cell-main { color: var(--teal); }
+  .cell-main { font-weight: 600; color: var(--ink); }
+  .cell-sub { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+  .cell-sub a.tel { color: var(--ink-muted); text-decoration: none; }
+  .cell-sub a.tel:hover { color: var(--teal); text-decoration: underline; }
+  .age-ok { color: var(--success); }
+  .age-warn { color: var(--warning); }
+  .age-bad { color: var(--danger); }
+  .pill-count { display: inline-block; min-width: 24px; padding: 1px 8px; border-radius: 999px; background: var(--teal-soft); color: var(--teal-strong); font-weight: 700; font-size: 12px; text-align: center; }
+  td.cell-late input { border-color: var(--danger); color: var(--danger); font-weight: 600; }
+  .late-flag { display: block; font-size: 11px; font-weight: 700; color: var(--danger); margin-top: 3px; }
+
+  /* Separadores de estado */
+  .stabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--sand); margin-bottom: 14px; }
+  .stab { border: 0; background: none; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink-muted); padding: 9px 12px; min-height: 40px; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+  .stab:hover { color: var(--ink); }
+  .stab.on { color: var(--teal); border-bottom-color: var(--teal); }
+  .fcount { font-size: 11.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--sand); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .stab.on .fcount { background: var(--teal-soft); color: var(--teal-strong); }
+
+  /* Barra de filtros */
+  .fpanel { background: var(--surface); border: 1px solid var(--sand); border-radius: 12px; padding: 10px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(20,24,45,0.04); }
+  .fbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .fsearch { position: relative; flex: 1 1 260px; min-width: 220px; max-width: 380px; }
+  .fsearch svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--ink-muted); pointer-events: none; }
+  .fsearch input { width: 100%; height: 38px; padding: 0 12px 0 34px; border: 1px solid var(--sand); border-radius: 8px; background: var(--surface-2); color: var(--ink); font: inherit; font-size: 13.5px; }
+  .fsearch input:focus { outline: none; border-color: var(--teal); background: var(--surface); box-shadow: 0 0 0 3px var(--teal-soft); }
+  .fcontrols { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .fsel { height: 38px; padding: 0 30px 0 11px; border: 1px solid var(--sand); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; max-width: 210px; cursor: pointer; }
+  .fsel.on { border-color: var(--teal); background: var(--teal-soft); color: var(--teal-strong); font-weight: 600; }
+  .fsel:focus { outline: none; box-shadow: 0 0 0 3px var(--teal-soft); border-color: var(--teal); }
+  .frange { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-muted); }
+  .fdate { height: 38px; padding: 0 8px; border: 1px solid var(--sand); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; }
+  .ftoggle { height: 38px; padding: 0 12px; border: 1px solid var(--sand); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+  .ftoggle:hover { border-color: var(--sand-strong); }
+  .ftoggle.tone-warning { color: var(--warning); }
+  .ftoggle.tone-danger { color: var(--danger); }
+  .ftoggle.on.tone-warning { background: var(--warning-soft); border-color: var(--warning); }
+  .ftoggle.on.tone-danger { background: var(--danger-soft); border-color: var(--danger); }
+  .fchips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 10px; }
+  .fchips-label { font-size: 12px; color: var(--ink-muted); margin-right: 2px; }
+  .fchip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 6px 0 11px; border: 1px solid var(--teal); border-radius: 999px; background: var(--teal-soft); color: var(--teal-strong); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .fchip span { display: inline-flex; width: 18px; height: 18px; align-items: center; justify-content: center; border-radius: 50%; font-size: 14px; line-height: 1; }
+  .fchip:hover span { background: rgba(0,0,0,0.08); }
+  .fclear { border: 0; background: none; font: inherit; font-size: 12.5px; color: var(--ink-muted); text-decoration: underline; cursor: pointer; padding: 6px; }
+  .fclear:hover { color: var(--ink); }
+  .fresult { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 2px 10px; }
+  .fresult-parts { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; color: var(--ink-muted); }
+  .fresult-parts b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .fresult .btn svg { margin-right: 2px; }
+
+  td.row-actions { display: table-cell; white-space: nowrap; text-align: right; }
+  td.row-actions > * { margin-left: 4px; vertical-align: middle; }
+  tbody td a:not(.btn) { color: var(--ink); text-decoration: none; font-weight: 500; }
+  tbody td a:not(.btn):hover { color: var(--teal); text-decoration: underline; }
+  .desc-cell { min-width: 220px; }
+
+  @media (max-width: 860px) {
+    .sidebar { width: auto; padding: 10px 12px; gap: 10px; }
+    .brand-name, .brand-sub { display: none; }
+    .fsel { flex: 1 1 calc(50% - 8px); }
+    .brand { border-bottom: 0; padding: 0 6px 0 0; }
+    .nav-section { display: none; }
+    .nav-link { white-space: nowrap; }
+    main.content { padding: 18px 14px 50px; }
+    .fsearch { max-width: none; flex-basis: 100%; }
+    .fcontrols { width: 100%; }
+    .fsel { flex: 1 1 140px; max-width: none; }
+    .table-wrap { max-height: none; }
   }
 </style>
 
@@ -969,25 +1086,19 @@
   window.addEventListener("hashchange", function () {
     route = parseHash();
     if (route.page !== "cliente") route.tab = "encomendas";
-    if (route.page !== lastPage) {
-      clientSearchTerm = "";
-      clientStatusFilter = "";
-      orderFilter = { status: "", q: "" };
-      quoteFilter = { status: "", q: "" };
-      visitFilter = { status: "", q: "" };
-    }
     lastPage = route.page;
     render();
   });
 
   /* ============ Rendering: shell ============ */
+  function navIcon(d) { return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + "</svg>"; }
   var NAV_ITEMS = [
-    { page: "dashboard", label: "Painel", ic: "◆" },
-    { page: "clientes", label: "Clientes", ic: "●" },
-    { page: "encomendas", label: "Encomendas", ic: "▣" },
-    { page: "orcamentos", label: "Orçamentos", ic: "▤" },
-    { page: "visitas", label: "Visitas", ic: "▲" },
-    { page: "voltas", label: "Voltas", ic: "◈" }
+    { page: "dashboard", label: "Painel", ic: navIcon('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>') },
+    { page: "clientes", label: "Clientes", ic: navIcon('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14a5 5 0 0 1 6 5"/>'), section: "Comercial" },
+    { page: "encomendas", label: "Encomendas", ic: navIcon('<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>') },
+    { page: "orcamentos", label: "Orçamentos", ic: navIcon('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>') },
+    { page: "visitas", label: "Visitas", ic: navIcon('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'), section: "Rotas" },
+    { page: "voltas", label: "Voltas", ic: navIcon('<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8a3.5 3.5 0 0 0 0-7H8a3.5 3.5 0 0 1 0-7h8"/>') }
   ];
 
   function render() {
@@ -995,7 +1106,7 @@
     var activePage = route.page === "cliente" ? "clientes" : route.page;
     app.innerHTML =
       '<aside class="sidebar">' +
-        '<div class="brand"><div class="brand-mark">C</div><div><div class="brand-name">Carteira de Clientes</div><div class="brand-sub">Gestão comercial</div></div></div>' +
+        '<div class="brand"><div class="brand-mark">CC</div><div><div class="brand-name">Carteira de Clientes</div><div class="brand-sub">Minho Ferragens · Comercial</div></div></div>' +
         '<div class="global-search"><input id="global-search-input" class="input" placeholder="Pesquisar tudo… ( / )" autocomplete="off"><div id="global-search-results" class="search-results" hidden></div></div>' +
         '<nav class="primary-nav">' +
         NAV_ITEMS.map(function (item) {
@@ -1003,7 +1114,8 @@
             : item.page === "encomendas" ? state.orders.length
             : item.page === "orcamentos" ? state.quotes.length
             : item.page === "visitas" ? state.visits.length : null;
-          return '<button class="nav-link' + (activePage === item.page ? " active" : "") + '" data-nav="' + item.page + '">' +
+          return (item.section ? '<div class="nav-section">' + item.section + "</div>" : "") +
+            '<button class="nav-link' + (activePage === item.page ? " active" : "") + '" data-nav="' + item.page + '"' + (activePage === item.page ? ' aria-current="page"' : "") + ">" +
             '<span class="ic">' + item.ic + "</span><span>" + item.label + "</span>" +
             (count !== null ? '<span class="count">' + count + "</span>" : "") +
             "</button>";
@@ -1360,50 +1472,291 @@
     return '<th class="sortable' + (extraClass ? " " + extraClass : "") + (active ? " sorted" : "") + '" data-sort-scope="' + scope + '" data-sort-key="' + key + '">' + escapeHtml(label) + arrow + "</th>";
   }
 
-  /* ============ Clients list ============ */
-  var clientSearchTerm = "";
-  var clientStatusFilter = "";
-  function renderClientsList() {
-    var q = clientSearchTerm.toLowerCase();
-    var orderCountMap = {}, lastVisitMap = {};
-    state.orders.forEach(function (o) { orderCountMap[o.clientId] = (orderCountMap[o.clientId] || 0) + 1; });
-    state.visits.forEach(function (v) { if (!lastVisitMap[v.clientId] || v.date > lastVisitMap[v.clientId]) lastVisitMap[v.clientId] = v.date; });
-
-    var list = state.clients.filter(function (c) {
-      if (clientStatusFilter && c.status !== clientStatusFilter) return false;
-      if (!q) return true;
-      return (c.name || "").toLowerCase().indexOf(q) > -1 || (c.email || "").toLowerCase().indexOf(q) > -1 || (c.phone || "").toLowerCase().indexOf(q) > -1 ||
-        (c.zona || "").toLowerCase().indexOf(q) > -1 || (c.nif || "").toLowerCase().indexOf(q) > -1 || (c.number || "").toLowerCase().indexOf(q) > -1;
+  /* ============ Filtros (2026-10-21) ============ */
+  // Filtros de cada lista (clientes, encomendas, orçamentos, visitas). Ficam
+  // guardados neste computador, por isso mantêm-se ao mudar de página; os
+  // filtros ativos aparecem sempre como etiquetas por cima da lista.
+  var FILTER_DEFAULTS = {
+    clients: { q: "", status: "", zona: "", volta: "", comercial: "", activity: "" },
+    orders: { q: "", status: "", docStatus: "", material: "", clientId: "", zona: "", period: "", from: "", to: "", priceReview: false, late: false },
+    quotes: { q: "", status: "", material: "", clientId: "", zona: "", comercial: "", period: "", from: "", to: "", expiring: false },
+    visits: { q: "", status: "", clientId: "", zona: "", volta: "", period: "", from: "", to: "" }
+  };
+  function cloneFilterDefaults(scope) { return JSON.parse(JSON.stringify(FILTER_DEFAULTS[scope])); }
+  function loadFilters() {
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem("cc-filtros-v1") || "{}") || {}; } catch (e) { saved = {}; }
+    var out = {};
+    Object.keys(FILTER_DEFAULTS).forEach(function (s) {
+      out[s] = cloneFilterDefaults(s);
+      if (saved[s] && typeof saved[s] === "object") {
+        Object.keys(out[s]).forEach(function (k) { if (saved[s][k] !== undefined) out[s][k] = saved[s][k]; });
+      }
     });
+    return out;
+  }
+  var F = loadFilters();
+  function saveFilters() { try { localStorage.setItem("cc-filtros-v1", JSON.stringify(F)); } catch (e) {} }
+  function setFilter(scope, key, value) {
+    F[scope][key] = value;
+    if (key === "period" && value !== "custom") { F[scope].from = ""; F[scope].to = ""; }
+    saveFilters();
+    render();
+  }
+  function clearFilters(scope, keys) {
+    var d = cloneFilterDefaults(scope);
+    if (keys === "*") { var status = F[scope].status; F[scope] = d; F[scope].status = status; }
+    else keys.split(",").forEach(function (k) { F[scope][k] = d[k]; });
+    saveFilters();
+    render();
+  }
+
+  var PERIODS = [
+    { v: "mes", label: "Este mês" },
+    { v: "mes_ant", label: "Mês passado" },
+    { v: "30d", label: "Últimos 30 dias" },
+    { v: "90d", label: "Últimos 90 dias" },
+    { v: "prox30", label: "Próximos 30 dias" },
+    { v: "ano", label: "Este ano" },
+    { v: "ano_ant", label: "Ano passado" },
+    { v: "custom", label: "Escolher datas…" }
+  ];
+  function periodBounds(f) {
+    var now = new Date(), y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+    switch (f.period) {
+      case "mes": return [isoDate(new Date(y, m, 1)), isoDate(new Date(y, m + 1, 0))];
+      case "mes_ant": return [isoDate(new Date(y, m - 1, 1)), isoDate(new Date(y, m, 0))];
+      case "30d": return [isoDate(new Date(y, m, d - 29)), todayISO()];
+      case "90d": return [isoDate(new Date(y, m, d - 89)), todayISO()];
+      case "prox30": return [todayISO(), isoDate(new Date(y, m, d + 29))];
+      case "ano": return [y + "-01-01", y + "-12-31"];
+      case "ano_ant": return [(y - 1) + "-01-01", (y - 1) + "-12-31"];
+      case "custom": return (f.from || f.to) ? [f.from || "", f.to || ""] : null;
+      default: return null;
+    }
+  }
+  function inPeriod(dateISO, f) {
+    var b = periodBounds(f);
+    if (!b) return true;
+    var dd = String(dateISO || "").slice(0, 10);
+    if (!dd) return false;
+    if (b[0] && dd < b[0]) return false;
+    if (b[1] && dd > b[1]) return false;
+    return true;
+  }
+  function periodLabel(f) {
+    if (f.period === "custom") return "De " + (f.from ? fmtDate(f.from) : "…") + " a " + (f.to ? fmtDate(f.to) : "…");
+    var p = PERIODS.find(function (x) { return x.v === f.period; });
+    return p ? p.label : "";
+  }
+  function matchText(q, parts) {
+    if (!q) return true;
+    var hay = normText(parts.filter(Boolean).join(" "));
+    return normText(q).split(" ").every(function (w) { return hay.indexOf(w) > -1; });
+  }
+  function countBy(list, fn) {
+    var out = {};
+    list.forEach(function (x) { var k = fn(x); out[k] = (out[k] || 0) + 1; });
+    return out;
+  }
+  function clientZona(id) { var c = clientById(id); return c ? (c.zona || "") : ""; }
+  function clientVolta(c) { return c ? String(c.volta || "").trim() : ""; }
+  function zonaOptions() { return uniqueSorted(state.clients.map(function (c) { return c.zona; }).filter(Boolean)).map(function (z) { return { v: z, label: z }; }); }
+  function voltaOptions() {
+    var vs = uniqueSorted(state.clients.map(clientVolta).filter(Boolean));
+    vs.sort(function (a, b) { return a.localeCompare(b, "pt", { numeric: true }); });
+    return vs.map(function (v) { return { v: v, label: /^\d+$/.test(v) ? "Volta " + v : v }; }).concat([{ v: "_none", label: "Sem volta" }]);
+  }
+  function comercialOptions() {
+    var vals = state.clients.map(function (c) { return c.comercial; }).concat(state.quotes.map(function (q) { return q.comercial; }));
+    return uniqueSorted(vals.filter(Boolean)).map(function (v) { return { v: v, label: v }; });
+  }
+  function clientFilterOptions(ids) {
+    var set = {};
+    ids.forEach(function (id) { set[id] = true; });
+    return state.clients.filter(function (c) { return set[c.id]; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); })
+      .map(function (c) { return { v: c.id, label: c.name }; });
+  }
+  function optionLabel(options, v) { var o = options.find(function (x) { return x.v === v; }); return o ? o.label : v; }
+
+  /* ---------- Peças da barra de filtros ---------- */
+  var ICON_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
+  var ICON_DOWNLOAD = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>';
+  function fOpt(v, label, cur) { return '<option value="' + escapeHtml(v) + '"' + (String(cur) === String(v) ? " selected" : "") + ">" + escapeHtml(label) + "</option>"; }
+  function fSelect(scope, key, allLabel, options, cur, aria) {
+    return '<select class="fsel' + (cur ? " on" : "") + '" data-f-scope="' + scope + '" data-f-key="' + key + '" aria-label="' + escapeHtml(aria) + '">' +
+      fOpt("", allLabel, cur) + options.map(function (o) { return fOpt(o.v, o.label, cur); }).join("") + "</select>";
+  }
+  function fToggle(scope, key, label, count, on, tone) {
+    return '<button type="button" class="ftoggle' + (tone ? " " + tone : "") + (on ? " on" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" data-f-scope="' + scope + '" data-f-toggle="' + key + '">' +
+      escapeHtml(label) + (count !== null && count !== undefined ? ' <span class="fcount">' + count + "</span>" : "") + "</button>";
+  }
+  function fSearch(scope, placeholder, cur) {
+    return '<div class="fsearch">' + ICON_SEARCH + '<input type="search" id="fsearch-' + scope + '" data-f-scope="' + scope + '" data-f-search placeholder="' + escapeHtml(placeholder) + '" value="' + escapeHtml(cur) + '" aria-label="' + escapeHtml(placeholder) + '"></div>';
+  }
+  function fPeriod(scope, f) {
+    var html = fSelect(scope, "period", "Todo o período", PERIODS, f.period, "Período");
+    if (f.period === "custom") {
+      html += '<span class="frange"><input type="date" class="fdate" data-f-scope="' + scope + '" data-f-key="from" value="' + escapeHtml(f.from || "") + '" aria-label="Desde">' +
+        '<span>a</span><input type="date" class="fdate" data-f-scope="' + scope + '" data-f-key="to" value="' + escapeHtml(f.to || "") + '" aria-label="Até"></span>';
+    }
+    return html;
+  }
+  function statusTabs(scope, map, counts, total, cur) {
+    return '<div class="stabs" role="tablist" aria-label="Estado">' +
+      '<button type="button" role="tab" class="stab' + (!cur ? " on" : "") + '" aria-selected="' + (!cur ? "true" : "false") + '" data-f-scope="' + scope + '" data-f-tab="">Todos <span class="fcount">' + total + "</span></button>" +
+      Object.keys(map).map(function (k) {
+        var on = cur === k;
+        return '<button type="button" role="tab" class="stab' + (on ? " on" : "") + '" aria-selected="' + (on ? "true" : "false") + '" data-f-scope="' + scope + '" data-f-tab="' + k + '">' +
+          escapeHtml(map[k].label) + ' <span class="fcount">' + (counts[k] || 0) + "</span></button>";
+      }).join("") + "</div>";
+  }
+  function activeChips(scope, chips) {
+    if (!chips.length) return "";
+    return '<div class="fchips"><span class="fchips-label">Filtros ativos:</span>' + chips.map(function (c) {
+      return '<button type="button" class="fchip" data-f-scope="' + scope + '" data-f-clear="' + c.key + '" aria-label="Remover filtro: ' + escapeHtml(c.label) + '">' + escapeHtml(c.label) + '<span aria-hidden="true">×</span></button>';
+    }).join("") + '<button type="button" class="fclear" data-f-scope="' + scope + '" data-f-clear="*">Limpar tudo</button></div>';
+  }
+  function resultBar(parts, exportScope) {
+    return '<div class="fresult"><div class="fresult-parts">' + parts.map(function (p) { return "<span>" + p + "</span>"; }).join("") + "</div>" +
+      (exportScope ? '<button type="button" class="btn btn-sm" data-f-export="' + exportScope + '">' + ICON_DOWNLOAD + " Exportar lista (Excel)</button>" : "") + "</div>";
+  }
+  function filterPanel(searchHtml, controlsHtml) {
+    return '<div class="fpanel"><div class="fbar">' + searchHtml + '<div class="fcontrols">' + controlsHtml + "</div></div></div>";
+  }
+  function daysAgoLabel(iso) {
+    var n = daysUntil(iso);
+    if (n === null) return "";
+    n = -n;
+    if (n === 0) return "hoje";
+    if (n === 1) return "ontem";
+    if (n < 0) return "daqui a " + (-n) + " dias";
+    return "há " + n + " dias";
+  }
+
+  /* ============ Clients list ============ */
+  var CLIENT_ACTIVITY = [
+    { v: "open", label: "Com encomendas em aberto" },
+    { v: "scheduled", label: "Com visita agendada" },
+    { v: "visit30", label: "Sem visita há +30 dias" },
+    { v: "visit60", label: "Sem visita há +60 dias" },
+    { v: "never", label: "Nunca visitado" },
+    { v: "nosales", label: "Sem vendas nos últimos 12 meses" }
+  ];
+  function clientStats() {
+    var st = { orders: {}, open: {}, sales12: {}, lastVisit: {}, nextVisit: {} };
+    var now = new Date();
+    var since = isoDate(new Date(now.getFullYear(), now.getMonth() - 11, 1));
+    var t = todayISO();
+    state.orders.forEach(function (o) {
+      st.orders[o.clientId] = (st.orders[o.clientId] || 0) + 1;
+      if (o.status !== "concluida" && o.status !== "anulada") st.open[o.clientId] = (st.open[o.clientId] || 0) + 1;
+      if ((o.date || "") >= since && o.status !== "anulada") st.sales12[o.clientId] = (st.sales12[o.clientId] || 0) + Number(o.amount || 0);
+    });
+    state.visits.forEach(function (v) {
+      if (!v.date || v.status === "cancelada") return;
+      if (v.status === "realizada" || v.date <= t) {
+        if (v.date <= t && (!st.lastVisit[v.clientId] || v.date > st.lastVisit[v.clientId])) st.lastVisit[v.clientId] = v.date;
+      }
+      if (v.status === "agendada" && v.date >= t && (!st.nextVisit[v.clientId] || v.date < st.nextVisit[v.clientId])) st.nextVisit[v.clientId] = v.date;
+    });
+    return st;
+  }
+  function filterClients(f, st) {
+    var t = todayISO();
+    return state.clients.filter(function (c) {
+      if (f.zona && (c.zona || "") !== f.zona) return false;
+      if (f.volta) {
+        if (f.volta === "_none") { if (clientVolta(c)) return false; }
+        else if (clientVolta(c) !== f.volta) return false;
+      }
+      if (f.comercial && (c.comercial || "") !== f.comercial) return false;
+      if (f.activity) {
+        var last = st.lastVisit[c.id];
+        var since = last ? -daysUntil(last) : null;
+        if (f.activity === "open" && !st.open[c.id]) return false;
+        if (f.activity === "scheduled" && !st.nextVisit[c.id]) return false;
+        if (f.activity === "visit30" && last && since <= 30) return false;
+        if (f.activity === "visit60" && last && since <= 60) return false;
+        if (f.activity === "never" && last) return false;
+        if (f.activity === "nosales" && st.sales12[c.id]) return false;
+      }
+      return matchText(f.q, [c.name, c.email, c.phone, c.zona, c.nif, c.number, c.city, c.comercial, c.notes]);
+    });
+  }
+  function filteredClientList() {
+    var f = F.clients, st = clientStats();
+    var base = filterClients(f, st);
+    var list = f.status ? base.filter(function (c) { return (c.status || "ativo") === f.status; }) : base;
     list = applySort(list, clientSort, {
       name: function (c) { return c.name; },
-      zona: function (c) { return c.zona; },
-      orders: function (c) { return orderCountMap[c.id] || 0; },
-      lastVisit: function (c) { return lastVisitMap[c.id] || ""; }
+      zona: function (c) { return (c.zona || "") + " " + clientVolta(c); },
+      comercial: function (c) { return c.comercial || ""; },
+      open: function (c) { return st.open[c.id] || 0; },
+      sales: function (c) { return st.sales12[c.id] || 0; },
+      lastVisit: function (c) { return st.lastVisit[c.id] || ""; },
+      nextVisit: function (c) { return st.nextVisit[c.id] || "9999"; }
     });
+    return { list: list, base: base, st: st };
+  }
+  function renderClientsList() {
+    var f = F.clients;
+    var r = filteredClientList(), list = r.list, st = r.st;
+    var counts = countBy(r.base, function (c) { return c.status || "ativo"; });
+    var zonas = zonaOptions(), voltas = voltaOptions(), comerciais = comercialOptions();
+
+    var chips = [];
+    if (f.q) chips.push({ key: "q", label: "“" + f.q + "”" });
+    if (f.zona) chips.push({ key: "zona", label: "Zona: " + f.zona });
+    if (f.volta) chips.push({ key: "volta", label: optionLabel(voltas, f.volta) });
+    if (f.comercial) chips.push({ key: "comercial", label: "Comercial: " + f.comercial });
+    if (f.activity) chips.push({ key: "activity", label: optionLabel(CLIENT_ACTIVITY, f.activity) });
+
+    var sales = list.reduce(function (s, c) { return s + (st.sales12[c.id] || 0); }, 0);
+    var openTotal = list.reduce(function (s, c) { return s + (st.open[c.id] || 0); }, 0);
 
     var rows = list.map(function (c) {
-      var nOrders = orderCountMap[c.id] || 0;
-      var lastVisit = lastVisitMap[c.id];
+      var last = st.lastVisit[c.id], next = st.nextVisit[c.id];
+      var age = last ? -daysUntil(last) : null;
+      var ageCls = age === null ? "" : age > 60 ? " age-bad" : age > 30 ? " age-warn" : " age-ok";
+      var sub = [c.city, c.phone ? '<a class="tel" href="tel:' + escapeHtml(String(c.phone).replace(/\s+/g, "")) + '" data-stop>' + escapeHtml(c.phone) + "</a>" : ""].filter(Boolean);
       return '<tr class="clickable" data-goto-client="' + c.id + '">' +
-        "<td>" + escapeHtml(c.name) + (c.city ? '<div class="hint" style="color:var(--ink-muted);font-size:12px;margin-top:2px;">' + escapeHtml(c.city) + "</div>" : "") + "</td>" +
-        "<td>" + (c.zona ? escapeHtml(c.zona) : '<span style="color:var(--ink-muted)">—</span>') + (c.volta ? '<div class="hint" style="color:var(--ink-muted);font-size:12px;margin-top:2px;">Volta ' + escapeHtml(c.volta) + "</div>" : "") + "</td>" +
+        '<td><div class="cell-main">' + escapeHtml(c.name) + "</div>" + (sub.length ? '<div class="cell-sub">' + sub.map(function (s, i) { return i === 0 && c.city ? escapeHtml(s) : s; }).join(" · ") + "</div>" : "") + "</td>" +
+        "<td>" + (c.zona ? escapeHtml(c.zona) : '<span class="muted">—</span>') + (clientVolta(c) ? '<div class="cell-sub">' + (/^\d+$/.test(clientVolta(c)) ? "Volta " : "") + escapeHtml(clientVolta(c)) + (c.visitFreq ? " · " + c.visitFreq + "×/mês" : "") + "</div>" : "") + "</td>" +
+        "<td>" + (c.comercial ? escapeHtml(c.comercial) : '<span class="muted">—</span>') + "</td>" +
         "<td>" + chip(CLIENT_STATUS, c.status || "ativo") + "</td>" +
-        "<td>" + (c.email ? escapeHtml(c.email) : '<span style="color:var(--ink-muted)">—</span>') + "<br>" + (c.phone ? '<span class="mono" style="font-size:12.5px;">' + escapeHtml(c.phone) + "</span>" : "") + "</td>" +
-        '<td class="num">' + nOrders + "</td>" +
-        "<td>" + (lastVisit ? fmtDate(lastVisit) : '<span style="color:var(--ink-muted)">—</span>') + "</td>" +
-        '<td class="row-actions"><button class="btn btn-sm" data-goto-client="' + c.id + '">Ver ficha</button></td>' +
+        '<td class="num">' + (st.open[c.id] ? '<span class="pill-count">' + st.open[c.id] + "</span>" : '<span class="muted">0</span>') + "</td>" +
+        '<td class="num mono">' + (st.sales12[c.id] ? fmtMoney(st.sales12[c.id]) : '<span class="muted">—</span>') + "</td>" +
+        "<td>" + (last ? '<div class="cell-main' + ageCls + '">' + fmtDate(last) + '</div><div class="cell-sub' + ageCls + '">' + daysAgoLabel(last) + "</div>" : '<span class="muted">Nunca</span>') + "</td>" +
+        "<td>" + (next ? fmtDate(next) : '<span class="muted">—</span>') + "</td>" +
         "</tr>";
     }).join("");
+
+    var controls =
+      fSelect("clients", "zona", "Todas as zonas", zonas, f.zona, "Zona") +
+      fSelect("clients", "volta", "Todas as voltas", voltas, f.volta, "Volta") +
+      fSelect("clients", "comercial", "Todos os comerciais", comerciais, f.comercial, "Comercial") +
+      fSelect("clients", "activity", "Qualquer atividade", CLIENT_ACTIVITY, f.activity, "Atividade");
 
     return (
       '<div class="page-head"><div><h1>Clientes</h1><div class="sub">' + state.clients.length + " na carteira</div></div>" +
       '<div class="head-actions"><button class="btn btn-primary" data-open-form="cliente">+ Novo cliente</button></div></div>' +
-      '<div class="search-row"><input class="input search-input" id="client-search" placeholder="Pesquisar por nome, zona, NIF, email ou telefone…" value="' + escapeHtml(clientSearchTerm) + '">' +
-      '<select class="input filter-input" id="client-status-filter"><option value="">Todos os estados</option>' + Object.keys(CLIENT_STATUS).map(function (k) { return '<option value="' + k + '"' + (clientStatusFilter === k ? " selected" : "") + ">" + CLIENT_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
+      statusTabs("clients", CLIENT_STATUS, counts, r.base.length, f.status) +
+      filterPanel(fSearch("clients", "Pesquisar nome, NIF, telefone, cidade…", f.q), controls) +
+      activeChips("clients", chips) +
+      resultBar([
+        "<b>" + list.length + "</b> " + (list.length === 1 ? "cliente" : "clientes"),
+        "Vendas 12 meses: <b>" + fmtMoney(sales) + "</b>",
+        "Encomendas em aberto: <b>" + openTotal + "</b>"
+      ], "clients") +
       '<div class="panel"><div class="panel-body">' +
-      (list.length ? '<div class="table-wrap"><table><thead><tr>' + sortTh("Nome", "name", clientSort, "clients") + sortTh("Zona", "zona", clientSort, "clients") + "<th>Estado</th><th>Contacto</th>" + sortTh("Encomendas", "orders", clientSort, "clients", "num") + sortTh("Última visita", "lastVisit", clientSort, "clients") + "<th></th></tr></thead><tbody>" + rows + "</tbody></table></div>"
-        : emptyState(state.clients.length ? "Sem resultados para essa pesquisa." : "Ainda não tem clientes registados.", state.clients.length ? "" : '<button class="btn btn-primary" data-open-form="cliente">+ Novo cliente</button>')) +
+      (list.length ? '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+        sortTh("Cliente", "name", clientSort, "clients") + sortTh("Zona / Volta", "zona", clientSort, "clients") + sortTh("Comercial", "comercial", clientSort, "clients") +
+        "<th>Estado</th>" + sortTh("Em aberto", "open", clientSort, "clients", "num") + sortTh("Vendas 12m", "sales", clientSort, "clients", "num") +
+        sortTh("Última visita", "lastVisit", clientSort, "clients") + sortTh("Próxima visita", "nextVisit", clientSort, "clients") +
+        "</tr></thead><tbody>" + rows + "</tbody></table></div>"
+        : emptyState(state.clients.length ? "Nenhum cliente corresponde aos filtros." : "Ainda não tem clientes registados.", state.clients.length ? '<button class="btn" data-f-scope="clients" data-f-clear="*">Limpar filtros</button>' : '<button class="btn btn-primary" data-open-form="cliente">+ Novo cliente</button>')) +
       "</div></div>"
     );
   }
@@ -1498,7 +1851,6 @@
   }
 
   /* ============ Orders page ============ */
-  var orderFilter = { status: "", q: "", docStatus: "", material: "", priceReview: false };
   function uniqueSorted(values) {
     var seen = {}; var out = [];
     values.forEach(function (v) { if (!seen[v]) { seen[v] = true; out.push(v); } });
@@ -1522,25 +1874,30 @@
           '<td><select class="input input-sm" data-inline-status data-kind="encomenda" data-id="' + o.id + '">' + selectOptions(ORDER_STATUS, o.status) + "</select>" + (docStatusLabel ? '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:3px;">' + escapeHtml(docStatusLabel) + "</div>" : "") + "</td>" +
           '<td class="num mono">' + (priceReview ? '<span class="chip chip-warning" title="Preço a rever">⚠ a rever</span>' : fmtMoney(o.amount)) + "</td>" +
           "<td>" + fmtDate(o.date) + "</td>" +
-          '<td><input type="date" class="input input-sm" data-inline-due data-id="' + o.id + '" value="' + (o.dueDate || "") + '"></td>' +
+          '<td' + (isOrderLate(o) ? ' class="cell-late"' : "") + '><input type="date" class="input input-sm" data-inline-due data-id="' + o.id + '" value="' + (o.dueDate || "") + '">' + (isOrderLate(o) ? '<span class="late-flag">Atrasada ' + (-daysUntil(o.dueDate)) + " d</span>" : "") + "</td>" +
           '<td class="row-actions">' + (o.pdfData ? '<button class="btn btn-sm" data-open-pdf="encomenda" data-id="' + o.id + '" title="Abrir PDF original">📄 PDF</button>' : "") + '<button class="btn btn-sm" data-open-form="encomenda" data-id="' + o.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="encomenda" data-id="' + o.id + '">Eliminar</button></td>' +
           "</tr>";
       }).join("") + "</tbody></table></div>";
   }
-  function renderOrders() {
-    var priceReviewCount = state.orders.filter(function (o) { return !o.amount; }).length;
-    var list = state.orders.filter(function (o) {
-      if (orderFilter.status && o.status !== orderFilter.status) return false;
-      if (orderFilter.docStatus && o.docStatus !== orderFilter.docStatus) return false;
-      if (orderFilter.material && (o.materialType || "") !== orderFilter.material) return false;
-      if (orderFilter.priceReview && o.amount) return false;
-      if (orderFilter.q) {
-        var q = orderFilter.q.toLowerCase();
-        if (clientName(o.clientId).toLowerCase().indexOf(q) === -1 && (o.description || "").toLowerCase().indexOf(q) === -1 &&
-          (o.documentNumber || "").toLowerCase().indexOf(q) === -1 && (o.materialType || "").toLowerCase().indexOf(q) === -1) return false;
-      }
-      return true;
+  function isOrderLate(o) {
+    return !!o.dueDate && o.dueDate < todayISO() && o.status !== "concluida" && o.status !== "anulada";
+  }
+  function filterOrdersBase(f) {
+    return state.orders.filter(function (o) {
+      if (f.docStatus && (o.docStatus || "") !== f.docStatus) return false;
+      if (f.material && (o.materialType || "") !== f.material) return false;
+      if (f.clientId && o.clientId !== f.clientId) return false;
+      if (f.zona && clientZona(o.clientId) !== f.zona) return false;
+      if (!inPeriod(o.date, f)) return false;
+      if (f.priceReview && o.amount) return false;
+      if (f.late && !isOrderLate(o)) return false;
+      return matchText(f.q, [clientName(o.clientId), o.description, o.documentNumber, o.materialType, o.notes]);
     });
+  }
+  function filteredOrderList() {
+    var f = F.orders;
+    var base = filterOrdersBase(f);
+    var list = f.status ? base.filter(function (o) { return o.status === f.status; }) : base;
     list = applySort(list, orderSort, {
       doc: function (o) { return o.documentNumber; },
       client: function (o) { return clientName(o.clientId); },
@@ -1549,31 +1906,63 @@
       date: function (o) { return o.date || ""; },
       due: function (o) { return o.dueDate || ""; }
     });
-    var materialValues = uniqueSorted(state.orders.map(function (o) { return o.materialType; }).filter(Boolean));
-    var filtersActive = orderFilter.status || orderFilter.docStatus || orderFilter.material || orderFilter.priceReview || orderFilter.q;
-    var subText = filtersActive ? list.length + " de " + state.orders.length + " no total" : state.orders.length + " no total";
+    return { list: list, base: base };
+  }
+  function renderOrders() {
+    var f = F.orders;
+    var r = filteredOrderList(), list = r.list;
+    var counts = countBy(r.base, function (o) { return o.status; });
+    var priceReviewCount = state.orders.filter(function (o) { return !o.amount; }).length;
+    var lateCount = state.orders.filter(isOrderLate).length;
+    var materials = uniqueSorted(state.orders.map(function (o) { return o.materialType; }).filter(Boolean)).map(function (m) { return { v: m, label: m }; });
+    var docs = Object.keys(ORDER_DOC_STATUS).map(function (k) { return { v: k, label: ORDER_DOC_STATUS[k].label }; });
+    var clients = clientFilterOptions(state.orders.map(function (o) { return o.clientId; }));
+    var zonas = zonaOptions();
+
+    var chips = [];
+    if (f.q) chips.push({ key: "q", label: "“" + f.q + "”" });
+    if (f.period) chips.push({ key: "period,from,to", label: periodLabel(f) });
+    if (f.clientId) chips.push({ key: "clientId", label: "Cliente: " + clientName(f.clientId) });
+    if (f.zona) chips.push({ key: "zona", label: "Zona: " + f.zona });
+    if (f.material) chips.push({ key: "material", label: f.material });
+    if (f.docStatus) chips.push({ key: "docStatus", label: "Doc.: " + optionLabel(docs, f.docStatus) });
+    if (f.priceReview) chips.push({ key: "priceReview", label: "Preço a rever" });
+    if (f.late) chips.push({ key: "late", label: "Atrasadas" });
+
+    var total = list.reduce(function (s, o) { return s + (o.status === "anulada" ? 0 : Number(o.amount || 0)); }, 0);
+    var nClients = Object.keys(countBy(list, function (o) { return o.clientId; })).length;
+
+    var controls =
+      fPeriod("orders", f) +
+      fSelect("orders", "clientId", "Todos os clientes", clients, f.clientId, "Cliente") +
+      fSelect("orders", "zona", "Todas as zonas", zonas, f.zona, "Zona") +
+      fSelect("orders", "material", "Todos os materiais", materials, f.material, "Material") +
+      fSelect("orders", "docStatus", "Todos os docs.", docs, f.docStatus, "Estado do documento") +
+      fToggle("orders", "late", "Atrasadas", lateCount, f.late, "tone-danger") +
+      fToggle("orders", "priceReview", "Preço a rever", priceReviewCount, f.priceReview, "tone-warning");
 
     return (
-      '<div class="page-head"><div><h1>Encomendas</h1><div class="sub">' + subText + "</div></div>" +
-      '<div class="head-actions"><button class="btn btn-primary" data-import-open="encomenda">📥 Importar ficheiro</button><button class="btn" id="export-orders-csv-btn">⭳ Exportar encomendas</button></div></div>' +
-      '<div class="search-row"><input class="input search-input" id="order-search" placeholder="Pesquisar por cliente, descrição, doc. ou material…" value="' + escapeHtml(orderFilter.q) + '">' +
-      '<select class="input filter-input" id="order-status-filter"><option value="">Todos os estados</option>' + Object.keys(ORDER_STATUS).map(function (k) { return '<option value="' + k + '"' + (orderFilter.status === k ? " selected" : "") + ">" + ORDER_STATUS[k].label + "</option>"; }).join("") + "</select>" +
-      '<select class="input filter-input" id="order-docstatus-filter"><option value="">Todos os docs.</option>' + Object.keys(ORDER_DOC_STATUS).map(function (k) { return '<option value="' + k + '"' + (orderFilter.docStatus === k ? " selected" : "") + ">" + ORDER_DOC_STATUS[k].label + "</option>"; }).join("") + "</select>" +
-      '<select class="input filter-input" id="order-material-filter"><option value="">Todos os materiais</option>' + materialValues.map(function (m) { return '<option value="' + escapeHtml(m) + '"' + (orderFilter.material === m ? " selected" : "") + ">" + escapeHtml(m) + "</option>"; }).join("") + "</select>" +
-      '<button class="btn btn-toggle-warning' + (orderFilter.priceReview ? " active" : "") + '" id="order-pricereview-filter">⚠ Preço a rever' + (priceReviewCount ? " (" + priceReviewCount + ")" : "") + "</button>" +
-      (filtersActive ? '<button class="filter-clear-link" id="order-filters-clear">Limpar filtros</button>' : "") +
-      "</div>" +
-      '<div class="panel"><div class="panel-body">' + (list.length ? tableOrders(list, false, true) : emptyState(filtersActive ? "Sem encomendas para os filtros escolhidos." : "Sem encomendas para mostrar.")) + "</div></div>"
+      '<div class="page-head"><div><h1>Encomendas</h1><div class="sub">' + state.orders.length + " no total</div></div>" +
+      '<div class="head-actions"><button class="btn btn-primary" data-import-open="encomenda">📥 Importar ficheiro</button></div></div>' +
+      statusTabs("orders", ORDER_STATUS, counts, r.base.length, f.status) +
+      filterPanel(fSearch("orders", "Pesquisar cliente, nº doc., descrição…", f.q), controls) +
+      activeChips("orders", chips) +
+      resultBar([
+        "<b>" + list.length + "</b> " + (list.length === 1 ? "encomenda" : "encomendas"),
+        "Valor: <b>" + fmtMoney(total) + "</b>",
+        "<b>" + nClients + "</b> " + (nClients === 1 ? "cliente" : "clientes")
+      ], "orders") +
+      '<div class="panel"><div class="panel-body">' + (list.length ? tableOrders(list, false, true)
+        : emptyState(chips.length || f.status ? "Nenhuma encomenda corresponde aos filtros." : "Sem encomendas para mostrar.", chips.length ? '<button class="btn" data-f-scope="orders" data-f-clear="*">Limpar filtros</button>' : "")) + "</div></div>"
     );
   }
 
   /* ============ Quotes page ============ */
-  var quoteFilter = { status: "", q: "" };
   function tableQuotes(list, hideClient, sortable) {
     var head = sortable
       ? sortTh("Nº", "number", quoteSort, "quotes") + (hideClient ? "" : sortTh("Cliente", "client", quoteSort, "quotes")) +
-        sortTh("Tipo / Material", "material", quoteSort, "quotes") + "<th>Descrição</th><th>Estado</th>" + sortTh("Valor", "amount", quoteSort, "quotes", "num") + sortTh("Válido até", "validUntil", quoteSort, "quotes") + "<th></th>"
-      : "<th>Nº</th>" + (hideClient ? "" : "<th>Cliente</th>") + '<th>Tipo / Material</th><th>Descrição</th><th>Estado</th><th class="num">Valor</th><th>Válido até</th><th></th>';
+        sortTh("Tipo / Material", "material", quoteSort, "quotes") + "<th>Descrição</th><th>Estado</th>" + sortTh("Valor", "amount", quoteSort, "quotes", "num") + sortTh("Data", "date", quoteSort, "quotes") + sortTh("Válido até", "validUntil", quoteSort, "quotes") + "<th></th>"
+      : "<th>Nº</th>" + (hideClient ? "" : "<th>Cliente</th>") + '<th>Tipo / Material</th><th>Descrição</th><th>Estado</th><th class="num">Valor</th><th>Data</th><th>Válido até</th><th></th>';
     return '<div class="table-wrap"><table><thead><tr>' + head + "</tr></thead><tbody>" +
       list.map(function (q) {
         return "<tr>" +
@@ -1583,20 +1972,33 @@
           "<td>" + descCell(q.description, q.clientRef ? '<div class="desc-sub">Ref. cliente: ' + escapeHtml(q.clientRef) + "</div>" : "") + "</td>" +
           '<td><select class="input input-sm" data-inline-status data-kind="orcamento" data-id="' + q.id + '">' + selectOptions(QUOTE_STATUS, q.status) + "</select></td>" +
           '<td class="num mono">' + fmtMoney(q.amount) + "</td>" +
-          "<td>" + fmtDate(q.validUntil) + "</td>" +
+          "<td>" + fmtDate(q.date) + "</td>" +
+          "<td>" + (isQuoteExpiring(q) ? '<span class="age-warn" style="font-weight:600">' + fmtDate(q.validUntil) + "</span>" : fmtDate(q.validUntil)) + "</td>" +
           '<td class="row-actions">' + (q.pdfData ? '<button class="btn btn-sm" data-open-pdf="orcamento" data-id="' + q.id + '" title="Abrir PDF original">📄 PDF</button>' : "") + '<button class="btn btn-sm" data-open-form="orcamento" data-id="' + q.id + '">Editar</button><button class="btn btn-sm btn-danger" data-del="orcamento" data-id="' + q.id + '">Eliminar</button></td>' +
           "</tr>";
       }).join("") + "</tbody></table></div>";
   }
-  function renderQuotes() {
-    var list = state.quotes.filter(function (q) {
-      if (quoteFilter.status && q.status !== quoteFilter.status) return false;
-      if (quoteFilter.q) {
-        var s = quoteFilter.q.toLowerCase();
-        return clientName(q.clientId).toLowerCase().indexOf(s) > -1 || (q.description || "").toLowerCase().indexOf(s) > -1 || (q.number || "").toLowerCase().indexOf(s) > -1 || (q.materialType || "").toLowerCase().indexOf(s) > -1;
-      }
-      return true;
+  function quoteComercial(q) { if (q.comercial) return q.comercial; var c = clientById(q.clientId); return c ? (c.comercial || "") : ""; }
+  function isQuoteExpiring(q) {
+    if (q.status !== "rascunho" && q.status !== "enviado") return false;
+    var d = daysUntil(q.validUntil);
+    return d !== null && d >= 0 && d <= 7;
+  }
+  function filterQuotesBase(f) {
+    return state.quotes.filter(function (q) {
+      if (f.material && (q.materialType || "") !== f.material) return false;
+      if (f.clientId && q.clientId !== f.clientId) return false;
+      if (f.zona && clientZona(q.clientId) !== f.zona) return false;
+      if (f.comercial && quoteComercial(q) !== f.comercial) return false;
+      if (!inPeriod(q.date, f)) return false;
+      if (f.expiring && !isQuoteExpiring(q)) return false;
+      return matchText(f.q, [clientName(q.clientId), q.description, q.number, q.materialType, q.clientRef, q.notes]);
     });
+  }
+  function filteredQuoteList() {
+    var f = F.quotes;
+    var base = filterQuotesBase(f);
+    var list = f.status ? base.filter(function (q) { return q.status === f.status; }) : base;
     list = applySort(list, quoteSort, {
       number: function (q) { return q.number; },
       client: function (q) { return clientName(q.clientId); },
@@ -1605,18 +2007,57 @@
       date: function (q) { return q.date || ""; },
       validUntil: function (q) { return q.validUntil || ""; }
     });
+    return { list: list, base: base };
+  }
+  function renderQuotes() {
+    var f = F.quotes;
+    var r = filteredQuoteList(), list = r.list;
+    var counts = countBy(r.base, function (q) { return q.status; });
+    var expiringCount = state.quotes.filter(isQuoteExpiring).length;
+    var materials = uniqueSorted(state.quotes.map(function (q) { return q.materialType; }).filter(Boolean)).map(function (m) { return { v: m, label: m }; });
+    var clients = clientFilterOptions(state.quotes.map(function (q) { return q.clientId; }));
+    var zonas = zonaOptions(), comerciais = comercialOptions();
+
+    var chips = [];
+    if (f.q) chips.push({ key: "q", label: "“" + f.q + "”" });
+    if (f.period) chips.push({ key: "period,from,to", label: periodLabel(f) });
+    if (f.clientId) chips.push({ key: "clientId", label: "Cliente: " + clientName(f.clientId) });
+    if (f.zona) chips.push({ key: "zona", label: "Zona: " + f.zona });
+    if (f.comercial) chips.push({ key: "comercial", label: "Comercial: " + f.comercial });
+    if (f.material) chips.push({ key: "material", label: f.material });
+    if (f.expiring) chips.push({ key: "expiring", label: "A expirar em 7 dias" });
+
+    var total = list.reduce(function (s, q) { return s + Number(q.amount || 0); }, 0);
+    var accepted = list.filter(function (q) { return q.status === "aceite"; });
+    var decided = list.filter(function (q) { return q.status === "aceite" || q.status === "rejeitado" || q.status === "expirado"; }).length;
+    var acceptedValue = accepted.reduce(function (s, q) { return s + Number(q.amount || 0); }, 0);
+    var rate = decided ? Math.round((accepted.length / decided) * 100) : null;
+
+    var controls =
+      fPeriod("quotes", f) +
+      fSelect("quotes", "clientId", "Todos os clientes", clients, f.clientId, "Cliente") +
+      fSelect("quotes", "zona", "Todas as zonas", zonas, f.zona, "Zona") +
+      fSelect("quotes", "comercial", "Todos os comerciais", comerciais, f.comercial, "Comercial") +
+      fSelect("quotes", "material", "Todos os materiais", materials, f.material, "Material") +
+      fToggle("quotes", "expiring", "A expirar", expiringCount, f.expiring, "tone-warning");
 
     return (
       '<div class="page-head"><div><h1>Orçamentos</h1><div class="sub">' + state.quotes.length + " no total</div></div>" +
-      '<div class="head-actions"><button class="btn btn-primary" data-import-open="orcamento">📥 Importar ficheiro</button><button class="btn" id="export-quotes-csv-btn">⭳ Exportar orçamentos</button></div></div>' +
-      '<div class="search-row"><input class="input search-input" id="quote-search" placeholder="Pesquisar por cliente, descrição, material ou nº…" value="' + escapeHtml(quoteFilter.q) + '">' +
-      '<select class="input filter-input" id="quote-status-filter"><option value="">Todos os estados</option>' + Object.keys(QUOTE_STATUS).map(function (k) { return '<option value="' + k + '"' + (quoteFilter.status === k ? " selected" : "") + ">" + QUOTE_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
-      '<div class="panel"><div class="panel-body">' + (list.length ? tableQuotes(list, false, true) : emptyState("Sem orçamentos para mostrar.")) + "</div></div>"
+      '<div class="head-actions"><button class="btn btn-primary" data-import-open="orcamento">📥 Importar ficheiro</button></div></div>' +
+      statusTabs("quotes", QUOTE_STATUS, counts, r.base.length, f.status) +
+      filterPanel(fSearch("quotes", "Pesquisar cliente, nº, descrição, ref. cliente…", f.q), controls) +
+      activeChips("quotes", chips) +
+      resultBar([
+        "<b>" + list.length + "</b> " + (list.length === 1 ? "orçamento" : "orçamentos"),
+        "Valor: <b>" + fmtMoney(total) + "</b>",
+        "Aceites: <b>" + fmtMoney(acceptedValue) + "</b>" + (rate !== null ? " (" + rate + "% dos decididos)" : "")
+      ], "quotes") +
+      '<div class="panel"><div class="panel-body">' + (list.length ? tableQuotes(list, false, true)
+        : emptyState(chips.length || f.status ? "Nenhum orçamento corresponde aos filtros." : "Sem orçamentos para mostrar.", chips.length ? '<button class="btn" data-f-scope="quotes" data-f-clear="*">Limpar filtros</button>' : "")) + "</div></div>"
     );
   }
 
   /* ============ Visits page ============ */
-  var visitFilter = { status: "", q: "" };
   var presetVisitDate = null;
   function tableVisits(list, hideClient, sortable) {
     var head = sortable
@@ -1747,27 +2188,67 @@
         '<div class="head-actions" style="display:flex;gap:8px;align-items:center">' + toggle + '<button class="btn btn-primary" data-open-form="visita">+ Agendar visita</button></div></div>' +
         renderVisitCalendar();
     }
-    var list = state.visits.filter(function (v) {
-      if (visitFilter.status && v.status !== visitFilter.status) return false;
-      if (visitFilter.q) {
-        var s = visitFilter.q.toLowerCase();
-        return clientName(v.clientId).toLowerCase().indexOf(s) > -1 || (v.purpose || "").toLowerCase().indexOf(s) > -1;
+    var f = F.visits;
+    var r = filteredVisitList(), list = r.list;
+    var counts = countBy(r.base, function (v) { return v.status; });
+    var clients = clientFilterOptions(state.visits.map(function (v) { return v.clientId; }));
+    var zonas = zonaOptions(), voltas = voltaOptions();
+
+    var chips = [];
+    if (f.q) chips.push({ key: "q", label: "“" + f.q + "”" });
+    if (f.period) chips.push({ key: "period,from,to", label: periodLabel(f) });
+    if (f.clientId) chips.push({ key: "clientId", label: "Cliente: " + clientName(f.clientId) });
+    if (f.zona) chips.push({ key: "zona", label: "Zona: " + f.zona });
+    if (f.volta) chips.push({ key: "volta", label: optionLabel(voltas, f.volta) });
+
+    var done = list.filter(function (v) { return v.status === "realizada"; }).length;
+    var nClients = Object.keys(countBy(list, function (v) { return v.clientId; })).length;
+
+    var controls =
+      fPeriod("visits", f) +
+      fSelect("visits", "clientId", "Todos os clientes", clients, f.clientId, "Cliente") +
+      fSelect("visits", "zona", "Todas as zonas", zonas, f.zona, "Zona") +
+      fSelect("visits", "volta", "Todas as voltas", voltas, f.volta, "Volta");
+
+    return (
+      '<div class="page-head"><div><h1>Visitas</h1><div class="sub">' + state.visits.length + " no total</div></div>" +
+      '<div class="head-actions" style="display:flex;gap:8px;align-items:center">' + toggle + '<button class="btn btn-primary" data-open-form="visita">+ Agendar visita</button></div></div>' +
+      statusTabs("visits", VISIT_STATUS, counts, r.base.length, f.status) +
+      filterPanel(fSearch("visits", "Pesquisar cliente, motivo, notas…", f.q), controls) +
+      activeChips("visits", chips) +
+      resultBar([
+        "<b>" + list.length + "</b> " + (list.length === 1 ? "visita" : "visitas"),
+        "Realizadas: <b>" + done + "</b>",
+        "<b>" + nClients + "</b> " + (nClients === 1 ? "cliente" : "clientes")
+      ], "visits") +
+      '<div class="panel"><div class="panel-body">' + (list.length ? tableVisits(list, false, true)
+        : emptyState("Nenhuma visita corresponde aos filtros.", chips.length ? '<button class="btn" data-f-scope="visits" data-f-clear="*">Limpar filtros</button>' : "")) + "</div></div>"
+    );
+  }
+  function visitVolta(v) {
+    var m = /^Volta\s*(\d+)\b/i.exec(v.notes || "");
+    if (m) return m[1];
+    return clientVolta(clientById(v.clientId));
+  }
+  function filteredVisitList() {
+    var f = F.visits;
+    var base = state.visits.filter(function (v) {
+      if (f.clientId && v.clientId !== f.clientId) return false;
+      if (f.zona && clientZona(v.clientId) !== f.zona) return false;
+      if (f.volta) {
+        var vv = visitVolta(v);
+        if (f.volta === "_none" ? !!vv : vv !== f.volta) return false;
       }
-      return true;
+      if (!inPeriod(v.date, f)) return false;
+      return matchText(f.q, [clientName(v.clientId), v.purpose, v.notes, v.result]);
     });
+    var list = f.status ? base.filter(function (v) { return v.status === f.status; }) : base;
     list = applySort(list, visitSort, {
       date: function (v) { return (v.date || "") + " " + (v.time || ""); },
       client: function (v) { return clientName(v.clientId); },
       next: function (v) { return v.nextVisit || ""; }
     });
-
-    return (
-      '<div class="page-head"><div><h1>Visitas</h1><div class="sub">' + state.visits.length + " no total</div></div>" +
-      '<div class="head-actions" style="display:flex;gap:8px;align-items:center">' + toggle + '<button class="btn btn-primary" data-open-form="visita">+ Agendar visita</button></div></div>' +
-      '<div class="search-row"><input class="input search-input" id="visit-search" placeholder="Pesquisar por cliente ou motivo…" value="' + escapeHtml(visitFilter.q) + '">' +
-      '<select class="input filter-input" id="visit-status-filter"><option value="">Todos os estados</option>' + Object.keys(VISIT_STATUS).map(function (k) { return '<option value="' + k + '"' + (visitFilter.status === k ? " selected" : "") + ">" + VISIT_STATUS[k].label + "</option>"; }).join("") + "</select></div>" +
-      '<div class="panel"><div class="panel-body">' + (list.length ? tableVisits(list, false, true) : emptyState("Sem visitas para mostrar.")) + "</div></div>"
-    );
+    return { list: list, base: base };
   }
 
   /* ============ Voltas ============ */
@@ -2286,33 +2767,29 @@
       });
     });
 
-    var clientSearch = document.getElementById("client-search");
-    if (clientSearch) clientSearch.addEventListener("input", debounce(function (e) { clientSearchTerm = e.target.value; render(); restoreFocus("client-search"); }, 200));
-    var clientStatusFilterEl = document.getElementById("client-status-filter");
-    if (clientStatusFilterEl) clientStatusFilterEl.addEventListener("change", function (e) { clientStatusFilter = e.target.value; render(); });
-
-    var orderSearch = document.getElementById("order-search");
-    if (orderSearch) orderSearch.addEventListener("input", debounce(function (e) { orderFilter.q = e.target.value; render(); restoreFocus("order-search"); }, 200));
-    var orderStatusFilter = document.getElementById("order-status-filter");
-    if (orderStatusFilter) orderStatusFilter.addEventListener("change", function (e) { orderFilter.status = e.target.value; render(); });
-    var orderDocStatusFilter = document.getElementById("order-docstatus-filter");
-    if (orderDocStatusFilter) orderDocStatusFilter.addEventListener("change", function (e) { orderFilter.docStatus = e.target.value; render(); });
-    var orderMaterialFilter = document.getElementById("order-material-filter");
-    if (orderMaterialFilter) orderMaterialFilter.addEventListener("change", function (e) { orderFilter.material = e.target.value; render(); });
-    var orderPriceReviewFilter = document.getElementById("order-pricereview-filter");
-    if (orderPriceReviewFilter) orderPriceReviewFilter.addEventListener("click", function () { orderFilter.priceReview = !orderFilter.priceReview; render(); });
-    var orderFiltersClear = document.getElementById("order-filters-clear");
-    if (orderFiltersClear) orderFiltersClear.addEventListener("click", function () { orderFilter = { status: "", q: "", docStatus: "", material: "", priceReview: false }; render(); });
-
-    var quoteSearch = document.getElementById("quote-search");
-    if (quoteSearch) quoteSearch.addEventListener("input", debounce(function (e) { quoteFilter.q = e.target.value; render(); restoreFocus("quote-search"); }, 200));
-    var quoteStatusFilter = document.getElementById("quote-status-filter");
-    if (quoteStatusFilter) quoteStatusFilter.addEventListener("change", function (e) { quoteFilter.status = e.target.value; render(); });
-
-    var visitSearch = document.getElementById("visit-search");
-    if (visitSearch) visitSearch.addEventListener("input", debounce(function (e) { visitFilter.q = e.target.value; render(); restoreFocus("visit-search"); }, 200));
-    var visitStatusFilter = document.getElementById("visit-status-filter");
-    if (visitStatusFilter) visitStatusFilter.addEventListener("change", function (e) { visitFilter.status = e.target.value; render(); });
+    // Filtros (2026-10-21): ligações genéricas da barra de filtros.
+    content.querySelectorAll("select[data-f-key], input.fdate[data-f-key]").forEach(function (el) {
+      el.addEventListener("change", function () { setFilter(el.getAttribute("data-f-scope"), el.getAttribute("data-f-key"), el.value); });
+    });
+    content.querySelectorAll("[data-f-toggle]").forEach(function (el) {
+      el.addEventListener("click", function () { var sc = el.getAttribute("data-f-scope"), k = el.getAttribute("data-f-toggle"); setFilter(sc, k, !F[sc][k]); });
+    });
+    content.querySelectorAll("[data-f-tab]").forEach(function (el) {
+      el.addEventListener("click", function () { setFilter(el.getAttribute("data-f-scope"), "status", el.getAttribute("data-f-tab")); });
+    });
+    content.querySelectorAll("[data-f-clear]").forEach(function (el) {
+      el.addEventListener("click", function () { clearFilters(el.getAttribute("data-f-scope"), el.getAttribute("data-f-clear")); });
+    });
+    content.querySelectorAll("[data-f-search]").forEach(function (el) {
+      el.addEventListener("input", debounce(function () { F[el.getAttribute("data-f-scope")].q = el.value; saveFilters(); render(); restoreFocus(el.id); }, 220));
+      el.addEventListener("keydown", function (e) { if (e.key === "Escape" && el.value) { e.preventDefault(); F[el.getAttribute("data-f-scope")].q = ""; saveFilters(); render(); restoreFocus(el.id); } });
+    });
+    content.querySelectorAll("[data-f-export]").forEach(function (el) {
+      el.addEventListener("click", function () { exportFiltered(el.getAttribute("data-f-export")); });
+    });
+    content.querySelectorAll("[data-stop]").forEach(function (el) {
+      el.addEventListener("click", function (e) { e.stopPropagation(); });
+    });
 
     content.querySelectorAll("[data-route-freq]").forEach(function (el) {
       el.addEventListener("change", function (e) {
@@ -2455,30 +2932,59 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
-  function doExportOrdersCsv() {
-    var rows = [["Cliente", "Nº Documento", "Descrição", "Material", "Estado doc.", "Estado", "Valor", "Data", "Data limite"]];
-    state.orders.forEach(function (o) {
-      rows.push([
-        clientName(o.clientId), o.documentNumber || "", o.description || "", o.materialType || "",
-        o.docStatus || "", (ORDER_STATUS[o.status] && ORDER_STATUS[o.status].label) || o.status || "",
-        o.amount || 0, o.date || "", o.dueDate || ""
-      ]);
+  function downloadXlsx(filename, sheetName, rows) {
+    if (typeof XLSX === "undefined") { downloadCsv(filename.replace(/\.xlsx$/, ".csv"), rows); return; }
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = rows[0].map(function (_, i) {
+      var w = 8;
+      rows.slice(0, 300).forEach(function (r) { var s = r[i] === null || r[i] === undefined ? "" : String(r[i]); if (s.length > w) w = s.length; });
+      return { wch: Math.min(60, w + 2) };
     });
-    downloadCsv("encomendas-" + todayISO() + ".csv", rows);
-    toast("Encomendas exportadas (" + state.orders.length + ").");
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, filename);
   }
-  function doExportQuotesCsv() {
-    var rows = [["Cliente", "Nº", "Descrição", "Material", "Referência cliente", "Comercial", "Estado", "Valor", "Data", "Válido até"]];
-    state.quotes.forEach(function (q) {
-      rows.push([
-        clientName(q.clientId), q.number || "", q.description || "", q.materialType || "", q.clientRef || "",
-        q.comercial || "", (QUOTE_STATUS[q.status] && QUOTE_STATUS[q.status].label) || q.status || "",
-        q.amount || 0, q.date || "", q.validUntil || ""
-      ]);
-    });
-    downloadCsv("orcamentos-" + todayISO() + ".csv", rows);
-    toast("Orçamentos exportados (" + state.quotes.length + ").");
+  // Exporta a lista tal como está filtrada no ecrã (pedido de 2026-10-21).
+  function exportFiltered(scope) {
+    var rows, n, name;
+    if (scope === "orders") {
+      var lo = filteredOrderList().list;
+      rows = [["Data", "Nº Documento", "Cliente", "Zona", "Material", "Descrição", "Estado", "Estado doc.", "Valor (€)", "Entrega prevista"]];
+      lo.forEach(function (o) {
+        rows.push([o.date || "", o.documentNumber || "", clientName(o.clientId), clientZona(o.clientId), o.materialType || "", o.description || "",
+          statusMeta(ORDER_STATUS, o.status).label, o.docStatus ? statusMeta(ORDER_DOC_STATUS, o.docStatus).label : "", Number(o.amount || 0), o.dueDate || ""]);
+      });
+      n = lo.length; name = "encomendas";
+    } else if (scope === "quotes") {
+      var lq = filteredQuoteList().list;
+      rows = [["Data", "Nº", "Cliente", "Zona", "Comercial", "Material", "Descrição", "Ref. cliente", "Estado", "Valor (€)", "Válido até"]];
+      lq.forEach(function (q) {
+        rows.push([q.date || "", q.number || "", clientName(q.clientId), clientZona(q.clientId), quoteComercial(q), q.materialType || "", q.description || "",
+          q.clientRef || "", statusMeta(QUOTE_STATUS, q.status).label, Number(q.amount || 0), q.validUntil || ""]);
+      });
+      n = lq.length; name = "orcamentos";
+    } else if (scope === "visits") {
+      var lv = filteredVisitList().list;
+      rows = [["Data", "Hora", "Cliente", "Zona", "Volta", "Motivo", "Estado", "Resultado", "Notas", "Próxima visita"]];
+      lv.forEach(function (v) {
+        rows.push([v.date || "", v.time || "", clientName(v.clientId), clientZona(v.clientId), visitVolta(v), v.purpose || "",
+          statusMeta(VISIT_STATUS, v.status).label, v.result || "", v.notes || "", v.nextVisit || ""]);
+      });
+      n = lv.length; name = "visitas";
+    } else {
+      var rc = filteredClientList(), lc = rc.list, st = rc.st;
+      rows = [["Cliente", "Nº", "NIF", "Zona", "Volta", "Visitas/mês", "Comercial", "Estado", "Telefone", "Email", "Cidade", "Encomendas em aberto", "Vendas 12 meses (€)", "Última visita", "Próxima visita"]];
+      lc.forEach(function (c) {
+        rows.push([c.name, c.number || "", c.nif || "", c.zona || "", clientVolta(c), c.visitFreq || "", c.comercial || "", statusMeta(CLIENT_STATUS, c.status || "ativo").label,
+          c.phone || "", c.email || "", c.city || "", st.open[c.id] || 0, Number(st.sales12[c.id] || 0), st.lastVisit[c.id] || "", st.nextVisit[c.id] || ""]);
+      });
+      n = lc.length; name = "clientes";
+    }
+    downloadXlsx(name + "-" + todayISO() + ".xlsx", name.charAt(0).toUpperCase() + name.slice(1), rows);
+    toast(n + " " + (n === 1 ? "linha exportada" : "linhas exportadas") + " para Excel.");
   }
+  function doExportOrdersCsv() { exportFiltered("orders"); }
+  function doExportQuotesCsv() { exportFiltered("quotes"); }
   /* ============ Import (ficheiro .csv/.xlsx) ============ */
   var importCtx = { kind: null, clientId: null };
   var ORDER_IMPORT_ALIASES = {
