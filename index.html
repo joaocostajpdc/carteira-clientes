@@ -967,6 +967,16 @@
       if (!res.ok) throw new Error("save failed");
       savePending = false;
       setSaveIndicator("saved", "Guardado");
+      // O servidor guarda os PDFs à parte e devolve a referência — troca-se aqui
+      // para as gravações seguintes já irem pequenas (2026-10-22).
+      return res.json().then(function (j) {
+        var files = j && j.files;
+        if (!files) return;
+        ["orders", "quotes"].forEach(function (k) {
+          state[k].forEach(function (r) { if (files[r.id] && typeof r.pdfData === "string" && r.pdfData.indexOf("data:") === 0) r.pdfData = files[r.id]; });
+        });
+        saveLocalBackup();
+      }).catch(function () {});
     }).catch(function () {
       setSaveIndicator("error", "Erro ao guardar — nova tentativa em breve");
       saveTimer = setTimeout(doSave, 2500);
@@ -3342,6 +3352,15 @@
   }
   function openStoredPdf(dataUrl, fileName) {
     if (!dataUrl) { toast("Sem PDF associado a este registo.", "error"); return; }
+    if (dataUrl.indexOf("file:") === 0) {
+      // PDF guardado à parte no servidor: abre já a janela (para não ser bloqueada) e carrega-o.
+      var w = window.open("", "_blank");
+      fetch("/api/files/" + encodeURIComponent(dataUrl.slice(5)), { credentials: "same-origin" })
+        .then(function (r) { if (!r.ok) throw new Error("pdf"); return r.blob(); })
+        .then(function (b) { var u = URL.createObjectURL(b); if (w) w.location.href = u; else window.open(u, "_blank"); setTimeout(function () { URL.revokeObjectURL(u); }, 60000); })
+        .catch(function () { if (w) w.close(); toast("Não foi possível abrir o PDF.", "error"); });
+      return;
+    }
     try {
       var comma = dataUrl.indexOf(",");
       var meta = dataUrl.slice(0, comma);

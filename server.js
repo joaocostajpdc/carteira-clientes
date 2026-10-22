@@ -90,18 +90,58 @@ app.get("/api/state", requireAuth, async (req, res) => {
   }
 });
 
+/* ---------- PDFs guardados à parte (2026-10-22) ----------
+   Os PDFs originais das encomendas/orçamentos iam dentro do estado e cada
+   gravação enviava tudo (passou os 5 MB e as gravações começaram a falhar).
+   Agora cada PDF vai para a tabela app_files e no estado fica só "file:<id>". */
+async function extractFiles(data, client) {
+  const replaced = {};
+  for (const kind of ["orders", "quotes"]) {
+    const list = Array.isArray(data[kind]) ? data[kind] : [];
+    for (const rec of list) {
+      if (rec && typeof rec.pdfData === "string" && rec.pdfData.startsWith("data:")) {
+        const id = "pdf_" + String(rec.id || crypto.randomBytes(6).toString("hex")).replace(/[^\w-]/g, "");
+        await client.query(
+          "INSERT INTO app_files (id, data, created_at) VALUES ($1, $2, now()) ON CONFLICT (id) DO UPDATE SET data = $2",
+          [id, rec.pdfData]
+        );
+        rec.pdfData = "file:" + id;
+        replaced[rec.id] = rec.pdfData;
+      }
+    }
+  }
+  return replaced;
+}
+
+app.get("/api/files/:id", requireAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT data FROM app_files WHERE id = $1", [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: "not_found" });
+    const m = /^data:([^;]+);base64,(.*)$/s.exec(rows[0].data);
+    if (!m) return res.status(500).json({ error: "bad_file" });
+    res.setHeader("Content-Type", m[1]);
+    res.setHeader("Cache-Control", "private, max-age=86400");
+    res.send(Buffer.from(m[2], "base64"));
+  } catch (err) {
+    console.error("GET /api/files failed", err);
+    res.status(500).json({ error: "db_error" });
+  }
+});
+
 app.put("/api/state", requireAuth, async (req, res) => {
   const data = req.body;
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return res.status(400).json({ error: "invalid_body" });
   }
+  let files = {};
   try {
+    files = await extractFiles(data, pool);
     await pool.query(
       "INSERT INTO app_state (id, data, updated_at) VALUES (1, $1, now()) " +
       "ON CONFLICT (id) DO UPDATE SET data = $1, updated_at = now()",
       [JSON.stringify(data)]
     );
-    res.json({ ok: true });
+    res.json({ ok: true, files });
   } catch (err) {
     console.error("PUT /api/state failed", err);
     res.status(500).json({ error: "db_error" });
@@ -117,6 +157,23 @@ async function ensureSchema() {
     "updated_at TIMESTAMPTZ NOT NULL DEFAULT now()" +
     ")"
   );
+  await pool.query(
+    "CREATE TABLE IF NOT EXISTS app_files (" +
+    "id TEXT PRIMARY KEY, " +
+    "data TEXT NOT NULL, " +
+    "created_at TIMESTAMPTZ NOT NULL DEFAULT now()" +
+    ")"
+  );
+  // Migração: tira os PDFs que ainda estiverem dentro do estado guardado.
+  const cur = await pool.query("SELECT data FROM app_state WHERE id = 1");
+  if (cur.rows.length) {
+    const st = cur.rows[0].data;
+    const moved = await extractFiles(st, pool);
+    if (Object.keys(moved).length) {
+      await pool.query("UPDATE app_state SET data = $1 WHERE id = 1", [JSON.stringify(st)]);
+      console.log("PDFs movidos para app_files:", Object.keys(moved).length);
+    }
+  }
   const { rows } = await pool.query("SELECT id FROM app_state WHERE id = 1");
   if (rows.length === 0) {
     const seed = require("./seed_data.json");
