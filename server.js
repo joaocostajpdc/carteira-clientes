@@ -82,7 +82,9 @@ app.post("/api/logout", (req, res) => {
 
 app.get("/api/state", requireAuth, async (req, res) => {
   try {
-    const { rows } = await pool.query("SELECT data FROM app_state WHERE id = 1");
+    const { rows } = await pool.query("SELECT data, updated_at::text AS rev FROM app_state WHERE id = 1");
+    if (rows.length) res.setHeader("X-State-Rev", rows[0].rev);
+    res.setHeader("Cache-Control", "no-store");
     res.json(rows.length ? rows[0].data : {});
   } catch (err) {
     console.error("GET /api/state failed", err);
@@ -133,15 +135,23 @@ app.put("/api/state", requireAuth, async (req, res) => {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return res.status(400).json({ error: "invalid_body" });
   }
+  // Proteção contra páginas desatualizadas (2026-10-24): uma página aberta
+  // há muito tempo voltava a gravar o estado antigo por cima das alterações
+  // feitas noutro aparelho (ex.: visitas apagadas que reapareciam). Agora cada
+  // gravação tem de indicar a versão que a página carregou; se entretanto
+  // alguém gravou, recusa (409) e a página vai buscar a versão nova.
+  const rev = req.get("X-State-Rev");
+  if (!rev) return res.status(409).json({ error: "stale" });
   let files = {};
   try {
     files = await extractFiles(data, pool);
-    await pool.query(
-      "INSERT INTO app_state (id, data, updated_at) VALUES (1, $1, now()) " +
-      "ON CONFLICT (id) DO UPDATE SET data = $1, updated_at = now()",
-      [JSON.stringify(data)]
+    const r = await pool.query(
+      "UPDATE app_state SET data = $1, updated_at = now() WHERE id = 1 AND updated_at::text = $2 RETURNING updated_at::text AS rev",
+      [JSON.stringify(data), rev]
     );
-    res.json({ ok: true, files });
+    if (!r.rows.length) return res.status(409).json({ error: "stale" });
+    res.setHeader("X-State-Rev", r.rows[0].rev);
+    res.json({ ok: true, files, rev: r.rows[0].rev });
   } catch (err) {
     console.error("PUT /api/state failed", err);
     res.status(500).json({ error: "db_error" });

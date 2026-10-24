@@ -726,6 +726,7 @@
   /* ============ State ============ */
   var state = { clients: [], orders: [], quotes: [], visits: [], notes: [], counters: { quote: 0 }, routeFreq: {} };
   var saveTimer = null;
+  var stateRev = null; // versão do servidor que esta página tem (2026-10-24)
   var savePending = false;
   var route = { page: "dashboard", id: null, tab: "encomendas" };
 
@@ -959,11 +960,20 @@
     saveLocalBackup();
     fetch("/api/state", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-State-Rev": stateRev || "" },
       credentials: "same-origin",
       body: JSON.stringify(state)
     }).then(function (res) {
       if (res.status === 401) { savePending = false; showLoginGate(); return; }
+      if (res.status === 409) {
+        // Alguém gravou noutro aparelho depois de esta página abrir: em vez de
+        // escrever por cima, carrega a versão mais recente.
+        savePending = false;
+        reloadFromServer("Os dados foram alterados noutro aparelho — carreguei a versão mais recente. Repete a última alteração, se for preciso.");
+        return;
+      }
+      var newRev = res.headers.get("X-State-Rev");
+      if (newRev) stateRev = newRev;
       if (!res.ok) throw new Error("save failed");
       savePending = false;
       setSaveIndicator("saved", "Guardado");
@@ -987,6 +997,7 @@
     fetch("/api/state", { credentials: "same-origin", cache: "no-store" }).then(function (res) {
       if (res.status === 401) { showLoginGate(); return null; }
       if (!res.ok) throw new Error("load failed");
+      stateRev = res.headers.get("X-State-Rev");
       return res.json();
     }).then(function (data) {
       if (data === null) return;
@@ -998,6 +1009,28 @@
       setSaveIndicator("error", "Sem ligação ao servidor — a mostrar cópia local");
     });
   }
+
+  // Vai buscar a versão do servidor (depois de um conflito, ou quando a página
+  // volta a ficar visível) para nunca se trabalhar sobre dados antigos.
+  function reloadFromServer(msg) {
+    fetch("/api/state", { credentials: "same-origin", cache: "no-store" }).then(function (res) {
+      if (!res.ok) throw new Error("load failed");
+      var r = res.headers.get("X-State-Rev");
+      return res.json().then(function (data) {
+        if (savePending) return; // entretanto houve uma alteração nova: grava-se primeiro
+        if (r === stateRev && !msg) return;
+        stateRev = r;
+        state = ensureShape(data);
+        saveLocalBackup();
+        render();
+        setSaveIndicator("saved", "Guardado");
+        if (msg) toast(msg);
+      });
+    }).catch(function () {});
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && !savePending && stateRev) reloadFromServer();
+  });
 
   function finishInit() {
     render();
