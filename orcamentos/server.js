@@ -13,7 +13,7 @@ const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 180; // 180 dias
 
 if (!APP_PASSWORD) console.warn("WARNING: APP_PASSWORD is not set — login will always fail until it is configured.");
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.PGSSLMODE === "disable" ? false : { rejectUnauthorized: false } });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.PGSSLMODE === "disable" ? false : { rejectUnauthorized: true } });
 const app = express();
 app.set("trust proxy", 1);
 app.use(cookieParser());
