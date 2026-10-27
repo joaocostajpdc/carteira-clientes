@@ -384,6 +384,8 @@
   .lead-map { height: calc(100vh - 330px); min-height: 460px; background: #e9edf2; }
   .lead-map-foot { padding: 9px 14px; font-size: 12.5px; color: var(--ink-muted); border-top: 1px solid var(--sand); }
   .lead-geo-run { color: #1f3fe0; font-weight: 600; }
+  .lead-pin.aprox span { opacity: .55; border-style: dashed; }
+  .lead-aprox { display: block; color: #b54708; font-size: 11.5px; margin-top: 2px; }
   .lead-pin { background: none; border: 0; display: flex; align-items: center; justify-content: center; }
   .lead-pin span { display: block; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.45); }
   .lead-pop { font: 13px/1.45 Inter, system-ui, sans-serif; min-width: 190px; display: flex; flex-direction: column; gap: 4px; }
@@ -2019,82 +2021,93 @@
     if (t.length > 60 || /alum[ií]nio|caixilharia|serralharia|fabricante|janelas|n[ãa]o enviar|enviadas|iniciadas|pedido|or[çc]amento|contactar|ligar|email|cliente|visita|falar|enviar|interess|concorr|\d{3}\s?\d{3}/i.test(t)) return "";
     return t;
   }
-  function leadGeoQuery(l) {
-    var loc = guessLocalidade(l);
-    return [loc, l.distrito, PAIS[l.mercado] || ""].filter(Boolean).join(", ");
+  // Tentativas de localização por ordem: localidade completa, só o concelho
+  // (última parte) e, por fim, o distrito/província (posição aproximada).
+  function leadGeoTries(l) {
+    var pais = PAIS[l.mercado] || "Portugal";
+    var loc = guessLocalidade(l), t = [];
+    if (loc) {
+      t.push(loc + ", " + pais);
+      var parts = loc.split(/\s*[,/]\s*/).filter(Boolean);
+      if (parts.length > 1) t.push(parts[parts.length - 1] + ", " + pais);
+    }
+    if (l.distrito) t.push(l.distrito + ", " + pais);
+    return t.filter(function (x, i) { return t.indexOf(x) === i; });
+  }
+  function clientGeoTries(c) {
+    var t = [];
+    var full = [c.address, c.postalCode, c.city].filter(Boolean).join(", ");
+    if (full) t.push(full + ", Portugal");
+    if (c.postalCode && c.city) t.push(c.postalCode + " " + c.city + ", Portugal");
+    if (c.city) t.push(c.city + ", Portugal");
+    if (c.zona) t.push(c.zona + ", Portugal");
+    return t.filter(function (x, i) { return t.indexOf(x) === i; });
+  }
+  function geoKey(tries, cc) { return cc + "|" + tries.join("|"); }
+  var geoFound = {}, geoPend = 0, geoTimer = null;
+  // Posição de uma empresa: a que o João acertou à mão (arrastando o ponto)
+  // ou a encontrada pelo servidor.
+  function leadPos(l) {
+    if (l.posManual && typeof l.posManual.lat === "number") return { lat: l.posManual.lat, lng: l.posManual.lng, prec: "manual" };
+    var tries = leadGeoTries(l);
+    if (!tries.length) return null;
+    var g = geoFound[geoKey(tries, l.mercado === "ES" ? "es" : "pt")];
+    if (!g) return g;
+    if (g.prec === "distrito") { var j = jitter(l.id); return { lat: g.lat + j[0], lng: g.lng + j[1], prec: "distrito" }; }
+    return g;
+  }
+  function clientPos(c) {
+    if (c.posManual && typeof c.posManual.lat === "number") return { lat: c.posManual.lat, lng: c.posManual.lng, prec: "manual" };
+    var tries = clientGeoTries(c);
+    return tries.length ? geoFound[geoKey(tries, "pt")] : null;
+  }
+  function jitter(id) {
+    var h = 0; for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    return [((h % 1000) / 1000 - 0.5) * 0.05, ((Math.floor(h / 1000) % 1000) / 1000 - 0.5) * 0.07];
+  }
+  function requestGeo() {
+    var items = [], seen = {};
+    function add(tries, cc) { if (!tries.length) return; var k = geoKey(tries, cc); if (seen[k] || geoFound[k] !== undefined) return; seen[k] = 1; items.push({ key: k, tries: tries, cc: cc }); }
+    state.leads.forEach(function (l) { if (!l.posManual) add(leadGeoTries(l), l.mercado === "ES" ? "es" : "pt"); });
+    if (leadMapShowClients) state.clients.forEach(function (c) { if (!c.posManual) add(clientGeoTries(c), "pt"); });
+    if (!items.length) { geoPend = 0; updateLeadMapFoot(); return; }
+    fetch("/api/geo", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: items }) })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j) return;
+        var novos = 0;
+        Object.keys(j.found || {}).forEach(function (k) { if (geoFound[k] === undefined) novos++; geoFound[k] = j.found[k]; });
+        geoPend = j.pendentes || 0;
+        if (novos && leadMap) drawLeadMarkers(false); else updateLeadMapFoot();
+        clearTimeout(geoTimer);
+        if (geoPend && leadMap) geoTimer = setTimeout(requestGeo, 15000);
+      }).catch(function () {});
   }
   function renderLeadMapShell(list) {
-    var geo = list.filter(function (l) { return typeof l.lat === "number"; }).length;
-    var aprox = list.filter(function (l) { return typeof l.lat === "number" && l.geoPrec === "distrito"; }).length;
-    var falta = list.length - geo;
     return '<div class="panel lead-map-panel"><div class="lead-map-bar">' +
       '<div class="lead-legend">' + Object.keys(LEAD_STATUS).map(function (k) {
         return '<span><i style="background:' + LEAD_COLORS[k] + '"></i>' + escapeHtml(LEAD_STATUS[k].label) + "</span>";
-      }).join("") + '<span><i class="cli"></i>Clientes da carteira</span></div>' +
+      }).join("") + (leadMapShowClients ? '<span><i class="cli"></i>Clientes da carteira</span>' : "") + "</div>" +
       '<label class="lead-map-cli"><input type="checkbox" id="lead-map-clients"' + (leadMapShowClients ? " checked" : "") + "> Mostrar clientes da carteira</label>" +
       "</div>" +
       '<div id="lead-map" class="lead-map" aria-label="Mapa das empresas em prospeção"></div>' +
-      '<div class="lead-map-foot" id="lead-map-foot">' + leadGeoStatusText(list.length, geo, aprox, falta) + "</div></div>";
+      '<div class="lead-map-foot" id="lead-map-foot"></div></div>';
   }
-  function leadGeoStatusText(total, geo, aprox, falta) {
-    var parts = ["<b>" + geo + "</b> de " + total + " no mapa"];
-    if (aprox) parts.push(aprox + " em posição aproximada (centro do distrito) — escreve a localidade na ficha para acertar");
-    if (falta) parts.push(geoRunning ? '<span class="lead-geo-run">A localizar ' + falta + " empresas… (cerca de " + Math.ceil(falta * 1.1 / 60) + " min)</span>" : falta + " por localizar");
-    return parts.join(" · ");
+  function updateLeadMapFoot() {
+    var foot = document.getElementById("lead-map-foot");
+    if (!foot) return;
+    var list = filteredLeadList().list, geo = 0, aprox = 0, sem = 0;
+    list.forEach(function (l) { var p = leadPos(l); if (p) { geo++; if (p.prec === "distrito") aprox++; } else if (p === null) sem++; });
+    var parts = ["<b>" + geo + "</b> de " + list.length + " no mapa"];
+    if (aprox) parts.push(aprox + " em posição aproximada (centro do distrito)");
+    if (geoPend) parts.push('<span class="lead-geo-run">A localizar ' + geoPend + " moradas… (cerca de " + Math.max(1, Math.ceil(geoPend * 1.5 / 60)) + " min)</span>");
+    else if (sem) parts.push(sem + " sem localidade — escreve-a na ficha");
+    parts.push("Se um ponto estiver no sítio errado, arrasta-o para o sítio certo.");
+    foot.innerHTML = parts.join(" · ");
   }
-
-  // Fila de localização (1 pedido por segundo, como pede o OpenStreetMap).
-  var geoRunning = false, geoDistritoCache = {};
-  function nominatim(q, cc) {
-    var url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=pt&countrycodes=" + cc + "&q=" + encodeURIComponent(q);
-    return fetch(url, { headers: { Accept: "application/json" } }).then(function (r) { return r.ok ? r.json() : []; }).then(function (j) {
-      return j && j[0] ? { lat: parseFloat(j[0].lat), lng: parseFloat(j[0].lon) } : null;
-    }).catch(function () { return null; });
-  }
-  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-  function jitter(id) {
-    var h = 0; for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-    return [((h % 1000) / 1000 - 0.5) * 0.06, (((h / 1000) % 1000) / 1000 - 0.5) * 0.08];
-  }
-  function startLeadGeocoding() {
-    if (geoRunning) return;
-    var queue = state.leads.filter(function (l) { return typeof l.lat !== "number" || l.geoQ !== leadGeoQuery(l); });
-    if (!queue.length) return;
-    geoRunning = true;
-    var done = 0;
-    (async function () {
-      for (var i = 0; i < queue.length; i++) {
-        var l = leadById(queue[i].id); // o estado pode ter sido recarregado entretanto
-        if (!l || (typeof l.lat === "number" && l.geoQ === leadGeoQuery(l))) continue;
-        var q = leadGeoQuery(l), cc = l.mercado === "ES" ? "es" : "pt";
-        var loc = guessLocalidade(l);
-        var pos = null, prec = "local";
-        if (loc) { pos = await nominatim(q, cc); await sleep(1100); }
-        if (!pos && loc && loc.indexOf(",") > -1) {
-          // tenta só a última parte (ex.: "Forjães, Esposende" → "Esposende")
-          pos = await nominatim(loc.split(",").pop().trim() + ", " + (l.distrito || "") + ", " + (PAIS[l.mercado] || ""), cc); await sleep(1100);
-        }
-        if (!pos && l.distrito) {
-          var dk = cc + "|" + l.distrito;
-          if (!(dk in geoDistritoCache)) { geoDistritoCache[dk] = await nominatim(l.distrito + ", " + (PAIS[l.mercado] || ""), cc); await sleep(1100); }
-          var d = geoDistritoCache[dk];
-          if (d) { var j = jitter(l.id); pos = { lat: d.lat + j[0], lng: d.lng + j[1] }; prec = "distrito"; }
-        }
-        if (pos) { l.lat = pos.lat; l.lng = pos.lng; l.geoPrec = prec; }
-        else { l.lat = null; l.lng = null; l.geoPrec = "nao"; }
-        l.geoQ = q;
-        done++;
-        if (done % 8 === 0 || i === queue.length - 1) scheduleSave();
-        if (leadMap && route.page === "prospecao" && leadView === "mapa") drawLeadMarkers(false);
-      }
-      geoRunning = false;
-      scheduleSave();
-      if (route.page === "prospecao" && leadView === "mapa") drawLeadMarkers(false);
-    })();
-  }
-  function markerIcon(color, small) {
+  function markerIcon(color, small, aprox) {
     var sz = small ? 10 : 14;
-    return L.divIcon({ className: "lead-pin", html: '<span style="background:' + color + ";width:" + sz + "px;height:" + sz + 'px"></span>', iconSize: [sz + 4, sz + 4], iconAnchor: [(sz + 4) / 2, (sz + 4) / 2] });
+    return L.divIcon({ className: "lead-pin" + (aprox ? " aprox" : ""), html: '<span style="background:' + color + ";width:" + sz + "px;height:" + sz + 'px"></span>', iconSize: [sz + 4, sz + 4], iconAnchor: [(sz + 4) / 2, (sz + 4) / 2] });
   }
   function initLeadMap() {
     var el = document.getElementById("lead-map");
@@ -2107,11 +2120,10 @@
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "© OpenStreetMap" }).addTo(leadMap);
     leadMapLayer = L.layerGroup().addTo(leadMap);
     var cb = document.getElementById("lead-map-clients");
-    if (cb) cb.addEventListener("change", function () { leadMapShowClients = cb.checked; if (leadMapShowClients) startClientGeocoding(); drawLeadMarkers(false); });
+    if (cb) cb.addEventListener("change", function () { leadMapShowClients = cb.checked; render(); });
     drawLeadMarkers(!leadMapView);
     if (leadMapView) leadMap.setView(leadMapView.c, leadMapView.z);
-    startLeadGeocoding();
-    if (leadMapShowClients) startClientGeocoding();
+    requestGeo();
   }
   function drawLeadMarkers(fit) {
     if (!leadMap || !leadMapLayer) return;
@@ -2119,63 +2131,47 @@
     var list = filteredLeadList().list;
     var pts = [];
     list.forEach(function (l) {
-      if (typeof l.lat !== "number" || typeof l.lng !== "number") return;
-      var m = L.marker([l.lat, l.lng], { icon: markerIcon(LEAD_COLORS[l.estado] || "#d97706"), title: l.name, riseOnHover: true });
+      var p = leadPos(l);
+      if (!p) return;
+      var m = L.marker([p.lat, p.lng], { icon: markerIcon(LEAD_COLORS[l.estado] || "#d97706", false, p.prec === "distrito"), title: l.name, riseOnHover: true, draggable: true, autoPan: true });
       var last = leadLastContact(l);
       m.bindPopup('<div class="lead-pop"><b>' + escapeHtml(l.name) + "</b>" +
-        '<div class="lead-pop-sub">' + escapeHtml([guessLocalidade(l), l.distrito].filter(Boolean).join(", ")) + (l.geoPrec === "distrito" ? ' <span class="muted">(aprox.)</span>' : "") + "</div>" +
+        '<div class="lead-pop-sub">' + escapeHtml([guessLocalidade(l), l.distrito].filter(Boolean).join(", ")) +
+          (p.prec === "distrito" ? ' <span class="lead-aprox">posição aproximada — arrasta o ponto para o sítio certo</span>' : p.prec === "manual" ? ' <span class="muted">(acertado à mão)</span>' : "") + "</div>" +
         '<div><span class="chip ' + statusMeta(LEAD_STATUS, l.estado).cls + '">' + escapeHtml(statusMeta(LEAD_STATUS, l.estado).label) + "</span></div>" +
         (l.phone ? '<div><a href="tel:' + escapeHtml(String(l.phone).replace(/\s+/g, "")) + '">' + escapeHtml(l.phone) + "</a></div>" : "") +
         (l.email ? '<div><a href="mailto:' + escapeHtml(l.email) + '">' + escapeHtml(l.email) + "</a></div>" : "") +
         '<div class="lead-pop-sub">Último contacto: ' + (last ? fmtDate(last.date) + " (" + escapeHtml(last.tipo || "") + ")" : "nunca") + "</div>" +
         '<div class="lead-pop-act"><button class="btn btn-sm" data-pop-contacto="' + l.id + '">+ Contacto</button><button class="btn btn-sm btn-primary" data-pop-open="' + l.id + '">Abrir ficha</button></div></div>');
+      m.on("dragend", function () {
+        var ll = m.getLatLng(), x = leadById(l.id);
+        if (!x) return;
+        x.posManual = { lat: Math.round(ll.lat * 1e6) / 1e6, lng: Math.round(ll.lng * 1e6) / 1e6 };
+        scheduleSave(); toast("Posição de " + x.name + " corrigida.");
+      });
       m.addTo(leadMapLayer);
-      pts.push([l.lat, l.lng]);
+      pts.push([p.lat, p.lng]);
     });
     if (leadMapShowClients) {
       state.clients.forEach(function (c) {
-        if (typeof c.lat !== "number") return;
-        L.marker([c.lat, c.lng], { icon: markerIcon("#1f3fe0", true), title: c.name, zIndexOffset: -500 })
-          .bindPopup('<div class="lead-pop"><b>' + escapeHtml(c.name) + '</b><div class="lead-pop-sub">Cliente da carteira' + (c.zona ? " · " + escapeHtml(c.zona) : "") + '</div><div class="lead-pop-act"><a class="btn btn-sm btn-primary" href="#/clientes/' + encodeURIComponent(c.id) + '">Abrir cliente</a></div></div>')
-          .addTo(leadMapLayer);
+        var p = clientPos(c);
+        if (!p) return;
+        var m = L.marker([p.lat, p.lng], { icon: markerIcon("#1f3fe0", true), title: c.name, zIndexOffset: -500, draggable: true })
+          .bindPopup('<div class="lead-pop"><b>' + escapeHtml(c.name) + '</b><div class="lead-pop-sub">Cliente da carteira' + (c.zona ? " · " + escapeHtml(c.zona) : "") + '</div><div class="lead-pop-act"><a class="btn btn-sm btn-primary" href="#/clientes/' + encodeURIComponent(c.id) + '">Abrir cliente</a></div></div>');
+        m.on("dragend", function () {
+          var ll = m.getLatLng(), x = clientById(c.id);
+          if (!x) return;
+          x.posManual = { lat: Math.round(ll.lat * 1e6) / 1e6, lng: Math.round(ll.lng * 1e6) / 1e6 };
+          scheduleSave(); toast("Posição de " + x.name + " corrigida.");
+        });
+        m.addTo(leadMapLayer);
       });
     }
     if (fit) {
       if (pts.length) leadMap.fitBounds(pts, { padding: [30, 30], maxZoom: 11 });
       else leadMap.setView(F.leads.mercado === "ES" ? [40.2, -3.7] : [39.6, -8.1], 6);
     }
-    var foot = document.getElementById("lead-map-foot");
-    if (foot) {
-      var geo = list.filter(function (l) { return typeof l.lat === "number"; }).length;
-      var aprox = list.filter(function (l) { return typeof l.lat === "number" && l.geoPrec === "distrito"; }).length;
-      foot.innerHTML = leadGeoStatusText(list.length, geo, aprox, list.length - geo);
-    }
-  }
-  // Clientes da carteira no mapa (para juntar prospeção às voltas).
-  var clientGeoRunning = false;
-  function startClientGeocoding() {
-    if (clientGeoRunning) return;
-    var queue = state.clients.filter(function (c) {
-      var q = [c.address, c.postalCode, c.city || c.zona].filter(Boolean).join(", ");
-      return q && (typeof c.lat !== "number" || c.geoQ !== q);
-    });
-    if (!queue.length) return;
-    clientGeoRunning = true;
-    (async function () {
-      for (var i = 0; i < queue.length; i++) {
-        var c = clientById(queue[i].id);
-        if (!c) continue;
-        var q = [c.address, c.postalCode, c.city || c.zona].filter(Boolean).join(", ");
-        var pos = await nominatim(q + ", Portugal", "pt"); await sleep(1100);
-        if (!pos && (c.city || c.zona)) { pos = await nominatim((c.city || c.zona) + ", Portugal", "pt"); await sleep(1100); }
-        if (pos) { c.lat = pos.lat; c.lng = pos.lng; }
-        c.geoQ = q;
-        if (i % 8 === 7 || i === queue.length - 1) scheduleSave();
-        if (leadMap && leadMapShowClients) drawLeadMarkers(false);
-      }
-      clientGeoRunning = false;
-      scheduleSave();
-    })();
+    updateLeadMapFoot();
   }
 
   function openLeadForm(id) {
@@ -2257,7 +2253,9 @@
     var l = id ? leadById(id) : null;
     if (!l) { l = { id: uid("lead"), createdAt: new Date().toISOString(), contactos: [] }; state.leads.push(l); }
     l.name = name; l.nif = val("f-nif"); l.mercado = val("f-mercado") || "PT"; l.email = val("f-email"); l.phone = val("f-phone");
-    l.distrito = val("f-distrito"); l.localidade = val("f-localidade"); l.estado = val("f-status") || "prospecao"; l.emailApresentacao = val("f-apres"); l.campanhas = val("f-campanhas");
+    var locAntes = guessLocalidade(l) + "|" + (l.distrito || "");
+    l.distrito = val("f-distrito"); l.localidade = val("f-localidade");
+    if (l.posManual && locAntes !== guessLocalidade(l) + "|" + (l.distrito || "")) delete l.posManual; l.estado = val("f-status") || "prospecao"; l.emailApresentacao = val("f-apres"); l.campanhas = val("f-campanhas");
     l.newsletter = !!document.getElementById("f-newsletter").checked; l.whatsapp = !!document.getElementById("f-whatsapp").checked;
     l.notes = val("f-notes"); l.updatedAt = new Date().toISOString();
     scheduleSave(); render();

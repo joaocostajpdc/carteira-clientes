@@ -158,6 +158,97 @@ app.put("/api/state", requireAuth, async (req, res) => {
   }
 });
 
+/* ---------- Localização para o mapa (2026-10-27) ----------
+   O mapa da Prospeção precisa das coordenadas de cada empresa. Procurar no
+   browser falhava (o OpenStreetMap recusa pedidos sem identificação e com
+   muitos seguidos), e as empresas ficavam todas no centro do distrito. Agora
+   é o servidor que procura, com identificação própria e 1 pedido por
+   segundo, e guarda o resultado numa tabela à parte (geo_cache), por isso
+   não mexe nos dados da carteira nem atrapalha quem está a trabalhar.
+   Cada pedido traz uma lista de tentativas por ordem (localidade completa,
+   só o concelho, o distrito); a primeira que der resultado fica. */
+const GEO_UA = "CarteiraClientes-MinhoFerragens/1.0 (geral@minhoferragens.pt)";
+let geoBusy = false;
+async function nominatim(q, cc) {
+  const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=0&accept-language=pt" +
+    (cc ? "&countrycodes=" + encodeURIComponent(cc) : "") + "&q=" + encodeURIComponent(q);
+  const r = await fetch(url, { headers: { "User-Agent": GEO_UA, "Accept": "application/json", "Referer": "https://carteira-clientes.onrender.com/" } });
+  if (r.status === 429 || r.status === 403) throw new Error("geo_blocked_" + r.status);
+  if (!r.ok) return null;
+  const j = await r.json();
+  return Array.isArray(j) && j[0] ? { lat: parseFloat(j[0].lat), lng: parseFloat(j[0].lon) } : null;
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function runGeoQueue() {
+  if (geoBusy) return;
+  geoBusy = true;
+  try {
+    for (;;) {
+      const { rows } = await pool.query(
+        "SELECT key, tries, cc FROM geo_cache WHERE status = 'pendente' ORDER BY created_at LIMIT 20"
+      );
+      if (!rows.length) break;
+      for (const row of rows) {
+        const tries = Array.isArray(row.tries) ? row.tries : [];
+        let found = null, prec = "nao";
+        try {
+          for (let i = 0; i < tries.length; i++) {
+            const pos = await nominatim(tries[i], row.cc);
+            await sleep(1100);
+            if (pos) { found = pos; prec = i === tries.length - 1 && tries.length > 1 ? "distrito" : "local"; break; }
+          }
+        } catch (err) {
+          console.warn("Mapa: o OpenStreetMap pediu para abrandar (" + err.message + "); volto a tentar daqui a 2 min.");
+          await sleep(120000);
+          continue;
+        }
+        await pool.query(
+          "UPDATE geo_cache SET status = 'feito', lat = $2, lng = $3, prec = $4, updated_at = now() WHERE key = $1",
+          [row.key, found ? found.lat : null, found ? found.lng : null, prec]
+        );
+      }
+    }
+  } catch (err) {
+    console.error("Mapa: erro na fila de localização", err);
+  } finally {
+    geoBusy = false;
+  }
+}
+
+// A página envia as moradas que precisa de ver no mapa e recebe as que já
+// estão localizadas; as novas ficam na fila.
+app.post("/api/geo", requireAuth, async (req, res) => {
+  try {
+    const items = Array.isArray(req.body && req.body.items) ? req.body.items.slice(0, 2000) : [];
+    const keys = [];
+    for (const it of items) {
+      if (!it || typeof it.key !== "string" || !it.key || it.key.length > 400) continue;
+      const tries = Array.isArray(it.tries) ? it.tries.filter((t) => typeof t === "string" && t.trim()).slice(0, 5) : [];
+      if (!tries.length) continue;
+      keys.push(it.key);
+      await pool.query(
+        "INSERT INTO geo_cache (key, tries, cc, status) VALUES ($1, $2, $3, 'pendente') ON CONFLICT (key) DO NOTHING",
+        [it.key, JSON.stringify(tries), typeof it.cc === "string" ? it.cc.slice(0, 5) : null]
+      );
+    }
+    const { rows } = await pool.query(
+      "SELECT key, lat, lng, prec, status FROM geo_cache WHERE key = ANY($1::text[])", [keys]
+    );
+    const out = {};
+    let pendentes = 0;
+    for (const r of rows) {
+      if (r.status === "pendente") { pendentes++; continue; }
+      out[r.key] = r.lat === null ? null : { lat: r.lat, lng: r.lng, prec: r.prec };
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ found: out, pendentes });
+    if (pendentes) runGeoQueue();
+  } catch (err) {
+    console.error("POST /api/geo failed", err);
+    res.status(500).json({ error: "db_error" });
+  }
+});
+
 /* ---------- boot ---------- */
 async function ensureSchema() {
   await pool.query(
@@ -173,6 +264,12 @@ async function ensureSchema() {
     "data TEXT NOT NULL, " +
     "created_at TIMESTAMPTZ NOT NULL DEFAULT now()" +
     ")"
+  );
+  await pool.query(
+    "CREATE TABLE IF NOT EXISTS geo_cache (" +
+    "key TEXT PRIMARY KEY, tries JSONB NOT NULL, cc TEXT, status TEXT NOT NULL DEFAULT 'pendente', " +
+    "lat DOUBLE PRECISION, lng DOUBLE PRECISION, prec TEXT, " +
+    "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())"
   );
   // Migração: tira os PDFs que ainda estiverem dentro do estado guardado.
   const cur = await pool.query("SELECT data FROM app_state WHERE id = 1");
@@ -213,7 +310,7 @@ async function ensureSchema() {
 // and the browser can fall back to its local copy of the data (the API
 // returns 500 "db_error" until the database is available again).
 ensureSchema()
-  .then(() => console.log("Database ready."))
+  .then(() => { console.log("Database ready."); runGeoQueue(); })
   .catch((err) => {
     console.error("Failed to initialize database", err);
   })
