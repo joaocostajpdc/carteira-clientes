@@ -184,6 +184,20 @@ async function ensureSchema() {
       console.log("PDFs movidos para app_files:", Object.keys(moved).length);
     }
   }
+  // Prospeção de mercado (2026-10-27): carrega uma única vez a lista do Excel
+  // "Prosperação mercado JPDC" (Portugal e Espanha) para a nova página
+  // Prospeção. Se já houver empresas em prospeção, não mexe em nada.
+  try {
+    const leads = require("./seed_leads.json");
+    const r = await pool.query(
+      "UPDATE app_state SET data = jsonb_set(data, '{leads}', $1::jsonb), updated_at = now() " +
+      "WHERE id = 1 AND (NOT (data ? 'leads') OR jsonb_array_length(data->'leads') = 0) RETURNING id",
+      [JSON.stringify(leads)]
+    );
+    if (r.rows.length) console.log("Prospeção: " + leads.length + " empresas carregadas.");
+  } catch (err) {
+    console.error("Prospeção: não foi possível carregar a lista", err);
+  }
   const { rows } = await pool.query("SELECT id FROM app_state WHERE id = 1");
   if (rows.length === 0) {
     const seed = require("./seed_data.json");

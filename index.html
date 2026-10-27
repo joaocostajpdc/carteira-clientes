@@ -353,6 +353,22 @@
   .chip-success { background: var(--success-soft); color: var(--success); }
   .chip-warning { background: var(--warning-soft); color: var(--warning); }
   .chip-danger { background: var(--danger-soft); color: var(--danger); }
+  /* Prospeção (2026-10-27) */
+  .lead-mercado { display: flex; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
+  .lead-merc { border: 1px solid var(--sand); background: var(--surface); border-radius: 10px; padding: 9px 16px; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink-muted); display: inline-flex; gap: 8px; align-items: center; }
+  .lead-merc.on { border-color: #1f3fe0; color: #1f3fe0; background: #eef1ff; }
+  .lead-table select.lead-estado { width: auto; min-width: 140px; padding: 5px 8px; font-size: 13px; height: auto; }
+  .lead-actions { white-space: nowrap; text-align: right; }
+  .lead-actions .btn + .btn { margin-left: 4px; }
+  a.chip.lead-cli { text-decoration: none; font-size: 11px; padding: 1px 7px; vertical-align: 1px; margin-left: 4px; }
+  .lead-checks { display: flex; gap: 18px; flex-wrap: wrap; margin: 2px 0 12px; font-size: 14px; }
+  .lead-checks label, .lead-check1 { display: flex; gap: 7px; align-items: center; cursor: pointer; font-size: 14px; }
+  .lead-check1 { margin: 8px 0 0; }
+  .lead-hist { border-top: 1px solid var(--sand); margin-top: 6px; padding-top: 12px; }
+  .lead-hist-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .lead-hist-row { display: grid; grid-template-columns: 86px auto 1fr; gap: 8px; align-items: start; font-size: 13.5px; padding: 6px 0; border-bottom: 1px dashed var(--sand); }
+  .lead-hist-cli { margin-top: 10px; font-size: 13.5px; }
+  .lead-del { color: var(--danger); margin-right: auto; }
 
   /* Calendário de visitas (2026-10-15) */
   .view-toggle { display: inline-flex; border: 1px solid var(--sand-strong); border-radius: 8px; overflow: hidden; }
@@ -724,7 +740,7 @@
 
 
   /* ============ State ============ */
-  var state = { clients: [], orders: [], quotes: [], visits: [], notes: [], counters: { quote: 0 }, routeFreq: {} };
+  var state = { clients: [], orders: [], quotes: [], visits: [], notes: [], leads: [], counters: { quote: 0 }, routeFreq: {} };
   var saveTimer = null;
   var stateRev = null; // versão do servidor que esta página tem (2026-10-24)
   var savePending = false;
@@ -735,6 +751,16 @@
     prospecao: { label: "Em prospeção",  cls: "chip-warning" },
     inativo:   { label: "Inativo",       cls: "chip-neutral" }
   };
+  // Prospeção de mercado (2026-10-27): empresas que ainda não são clientes.
+  var LEAD_STATUS = {
+    prospecao:     { label: "Em prospeção",  cls: "chip-warning" },
+    conversas:     { label: "Em conversas",  cls: "chip-teal" },
+    cliente:       { label: "Já é cliente",  cls: "chip-success" },
+    sem_interesse: { label: "Sem interesse", cls: "chip-neutral" },
+    concorrente:   { label: "Concorrente",   cls: "chip-danger" }
+  };
+  var LEAD_CONTACT_TYPES = ["Email", "Telefone", "Visita", "WhatsApp", "Newsletter / campanha", "Outro"];
+  var LEAD_MERCADOS = { PT: "Portugal", ES: "Espanha" };
   var ORDER_STATUS = {
     pendente:   { label: "Pendente",   cls: "chip-neutral" },
     a_produzir: { label: "A produzir", cls: "chip-teal" },
@@ -925,6 +951,7 @@
     obj.quotes = Array.isArray(obj.quotes) ? obj.quotes : [];
     obj.visits = Array.isArray(obj.visits) ? obj.visits : [];
     obj.notes = Array.isArray(obj.notes) ? obj.notes : [];
+    obj.leads = Array.isArray(obj.leads) ? obj.leads : [];
     obj.counters = obj.counters && typeof obj.counters === "object" ? obj.counters : { quote: 0 };
     obj.counters.quote = obj.counters.quote || 0;
     obj.routeFreq = obj.routeFreq && typeof obj.routeFreq === "object" ? obj.routeFreq : {};
@@ -1092,7 +1119,11 @@
       var hay = [v.purpose, clientName(v.clientId)].filter(Boolean).join(" ").toLowerCase();
       if (hay.indexOf(q) > -1) out.push({ type: "visit", ic: "▲", title: v.purpose, sub: clientName(v.clientId) + " · " + fmtDate(v.date), nav: "/clientes/" + encodeURIComponent(v.clientId) + "/visitas" });
     });
-    return out.slice(0, 6);
+    (state.leads || []).forEach(function (l) {
+      var hay = [l.name, l.email, l.phone, l.nif, l.distrito, l.notes].filter(Boolean).join(" ").toLowerCase();
+      if (hay.indexOf(q) > -1) out.push({ type: "client", ic: "◎", title: l.name, sub: "Prospeção · " + (l.distrito || LEAD_MERCADOS[l.mercado] || ""), nav: "/prospecao", leadId: l.id });
+    });
+    return out.slice(0, 8);
   }
   function renderGlobalSearch(query) {
     var results = document.getElementById("global-search-results");
@@ -1140,6 +1171,7 @@
     { page: "clientes", label: "Clientes", ic: navIcon('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14a5 5 0 0 1 6 5"/>'), section: "Comercial" },
     { page: "encomendas", label: "Encomendas", ic: navIcon('<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>') },
     { page: "orcamentos", label: "Orçamentos", ic: navIcon('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>') },
+    { page: "prospecao", label: "Prospeção", ic: navIcon('<circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5l-4.8-4.8M11 8v6M8 11h6"/>') },
     { page: "visitas", label: "Visitas", ic: navIcon('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'), section: "Rotas" },
     { page: "voltas", label: "Voltas", ic: navIcon('<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8a3.5 3.5 0 0 0 0-7H8a3.5 3.5 0 0 1 0-7h8"/>') }
   ];
@@ -1156,7 +1188,8 @@
           var count = item.page === "clientes" ? state.clients.length
             : item.page === "encomendas" ? state.orders.length
             : item.page === "orcamentos" ? state.quotes.length
-            : item.page === "visitas" ? state.visits.length : null;
+            : item.page === "visitas" ? state.visits.length
+            : item.page === "prospecao" ? state.leads.filter(function (l) { return l.estado === "prospecao" || l.estado === "conversas"; }).length : null;
           return (item.section ? '<div class="nav-section">' + item.section + "</div>" : "") +
             '<button class="nav-link' + (activePage === item.page ? " active" : "") + '" data-nav="' + item.page + '"' + (activePage === item.page ? ' aria-current="page"' : "") + ">" +
             '<span class="ic">' + item.ic + "</span><span>" + item.label + "</span>" +
@@ -1192,6 +1225,7 @@
     else if (route.page === "orcamentos") content.innerHTML = renderQuotes();
     else if (route.page === "visitas") content.innerHTML = renderVisits();
     else if (route.page === "voltas") content.innerHTML = renderVoltas();
+    else if (route.page === "prospecao") content.innerHTML = renderLeads();
     else content.innerHTML = renderDashboard();
 
     bindContentActions();
@@ -1490,8 +1524,9 @@
   var orderSort = { key: "date", dir: "desc" };
   var quoteSort = { key: "date", dir: "desc" };
   var visitSort = { key: "date", dir: "desc" };
+  var leadSort = { key: "name", dir: "asc" };
   function sortScope(name) {
-    return name === "clients" ? clientSort : name === "orders" ? orderSort : name === "quotes" ? quoteSort : visitSort;
+    return name === "clients" ? clientSort : name === "orders" ? orderSort : name === "quotes" ? quoteSort : name === "leads" ? leadSort : visitSort;
   }
   function toggleSort(name, key, defaultDesc) {
     var s = sortScope(name);
@@ -1523,7 +1558,8 @@
     clients: { q: "", status: "", zona: "", volta: "", comercial: "", activity: "" },
     orders: { q: "", status: "", docStatus: "", material: "", clientId: "", zona: "", period: "", from: "", to: "", priceReview: false, late: false },
     quotes: { q: "", status: "", material: "", clientId: "", zona: "", comercial: "", period: "", from: "", to: "", expiring: false },
-    visits: { q: "", status: "", clientId: "", zona: "", volta: "", period: "", from: "", to: "" }
+    visits: { q: "", status: "", clientId: "", zona: "", volta: "", period: "", from: "", to: "" },
+    leads: { q: "", status: "", mercado: "PT", distrito: "", contacto: "" }
   };
   function cloneFilterDefaults(scope) { return JSON.parse(JSON.stringify(FILTER_DEFAULTS[scope])); }
   function loadFilters() {
@@ -1802,6 +1838,278 @@
         : emptyState(state.clients.length ? "Nenhum cliente corresponde aos filtros." : "Ainda não tem clientes registados.", state.clients.length ? '<button class="btn" data-f-scope="clients" data-f-clear="*">Limpar filtros</button>' : '<button class="btn btn-primary" data-open-form="cliente">+ Novo cliente</button>')) +
       "</div></div>"
     );
+  }
+
+  /* ============ Prospeção de mercado (2026-10-27) ============ */
+  // Lista de empresas a prospetar (Portugal e Espanha), importada do Excel
+  // "Prosperação mercado JPDC". Cada empresa tem estado, contactos feitos e
+  // pode passar a cliente da carteira com um clique.
+  function normKey(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+      .replace(/\b(lda|limitada|unipessoal|s\.?a|s\.?l|serralharia|caixilharias?|aluminios?)\b/g, "").replace(/[^a-z0-9]/g, "");
+  }
+  function leadClientMatch(l) {
+    if (l.clientId && clientById(l.clientId)) return clientById(l.clientId);
+    var nif = String(l.nif || "").replace(/\D/g, "");
+    if (nif.length === 9 && nif !== "999999999") {
+      var byNif = state.clients.find(function (c) { return String(c.nif || "").replace(/\D/g, "") === nif; });
+      if (byNif) return byNif;
+    }
+    var k = normKey(l.name);
+    if (k.length < 4) return null;
+    return state.clients.find(function (c) { return normKey(c.name) === k; }) || null;
+  }
+  function leadLastContact(l) {
+    var cs = (l.contactos || []).slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+    if (cs.length) return cs[0];
+    if (l.emailApresentacao) return { date: l.emailApresentacao, tipo: "Email", texto: "Email de apresentação" };
+    return null;
+  }
+  function leadById(id) { return state.leads.find(function (l) { return l.id === id; }); }
+  var LEAD_CONTACTO_FILTERS = [
+    { v: "nunca", label: "Nunca contactadas" },
+    { v: "apresentacao", label: "Com email de apresentação" },
+    { v: "sem_apresentacao", label: "Sem email de apresentação" },
+    { v: "telefone", label: "Com telefone" },
+    { v: "30d", label: "Sem contacto há 30+ dias" }
+  ];
+  function filteredLeadList() {
+    var f = F.leads;
+    var base = state.leads.filter(function (l) { return (l.mercado || "PT") === (f.mercado || "PT"); });
+    if (f.distrito) base = base.filter(function (l) { return (l.distrito || "") === f.distrito; });
+    if (f.contacto) base = base.filter(function (l) {
+      var last = leadLastContact(l);
+      if (f.contacto === "nunca") return !last;
+      if (f.contacto === "apresentacao") return !!l.emailApresentacao;
+      if (f.contacto === "sem_apresentacao") return !l.emailApresentacao;
+      if (f.contacto === "telefone") return !!l.phone;
+      if (f.contacto === "30d") return !last || -daysUntil(last.date) >= 30;
+      return true;
+    });
+    if (f.q) {
+      var q = f.q.toLowerCase();
+      base = base.filter(function (l) { return [l.name, l.nif, l.email, l.phone, l.distrito, l.notes].filter(Boolean).join(" ").toLowerCase().indexOf(q) > -1; });
+    }
+    var list = f.status ? base.filter(function (l) { return l.estado === f.status; }) : base;
+    list = applySort(list, leadSort, {
+      name: function (l) { return l.name; },
+      distrito: function (l) { return (l.distrito || "") + " " + l.name; },
+      estado: function (l) { return Object.keys(LEAD_STATUS).indexOf(l.estado); },
+      ultimo: function (l) { var c = leadLastContact(l); return c ? c.date : ""; }
+    });
+    return { base: base, list: list };
+  }
+  function renderLeads() {
+    var f = F.leads;
+    var mercado = f.mercado || "PT";
+    var r = filteredLeadList(), list = r.list;
+    var counts = countBy(r.base, function (l) { return l.estado || "prospecao"; });
+    var all = state.leads.filter(function (l) { return (l.mercado || "PT") === mercado; });
+    var distritos = uniqueSorted(all.map(function (l) { return l.distrito; }).filter(Boolean)).map(function (d) { return { v: d, label: d }; });
+    var mes = todayISO().slice(0, 7);
+    var contactosMes = 0;
+    all.forEach(function (l) { (l.contactos || []).forEach(function (c) { if (String(c.date).slice(0, 7) === mes) contactosMes++; }); });
+    var nunca = all.filter(function (l) { return !leadLastContact(l) && (l.estado === "prospecao" || l.estado === "conversas"); }).length;
+
+    var chips = [];
+    if (f.q) chips.push({ key: "q", label: "“" + f.q + "”" });
+    if (f.distrito) chips.push({ key: "distrito", label: (mercado === "ES" ? "Província: " : "Distrito: ") + f.distrito });
+    if (f.contacto) chips.push({ key: "contacto", label: optionLabel(LEAD_CONTACTO_FILTERS, f.contacto) });
+
+    var rows = list.map(function (l) {
+      var last = leadLastContact(l);
+      var age = last ? -daysUntil(last.date) : null;
+      var ageCls = age === null ? "" : age > 60 ? " age-bad" : age > 30 ? " age-warn" : " age-ok";
+      var cli = leadClientMatch(l);
+      var tel = l.phone ? '<a class="tel" href="tel:' + escapeHtml(String(l.phone).replace(/\s+/g, "")) + '" data-stop>' + escapeHtml(l.phone) + "</a>" : "";
+      var mail = l.email ? '<a class="tel" href="mailto:' + escapeHtml(l.email) + '" data-stop>' + escapeHtml(l.email) + "</a>" : "";
+      return '<tr class="clickable" data-lead-open="' + l.id + '">' +
+        '<td><div class="cell-main">' + escapeHtml(l.name) +
+          (cli ? ' <a class="chip chip-success lead-cli" href="#/clientes/' + encodeURIComponent(cli.id) + '" data-stop title="Já está na carteira de clientes">na carteira</a>' : "") + "</div>" +
+          '<div class="cell-sub">' + [l.nif ? "NIF " + escapeHtml(l.nif) : "", l.notes ? escapeHtml(l.notes.length > 70 ? l.notes.slice(0, 70) + "…" : l.notes) : ""].filter(Boolean).join(" · ") + "</div></td>" +
+        "<td>" + (l.distrito ? escapeHtml(l.distrito) : '<span class="muted">—</span>') + "</td>" +
+        '<td><div class="cell-main">' + (tel || '<span class="muted">—</span>') + '</div><div class="cell-sub">' + mail + "</div></td>" +
+        '<td><select class="input lead-estado" data-lead-estado="' + l.id + '" data-stop aria-label="Estado">' + selectOptions(LEAD_STATUS, l.estado || "prospecao") + "</select></td>" +
+        "<td>" + (last ? '<div class="cell-main' + ageCls + '">' + fmtDate(last.date) + '</div><div class="cell-sub">' + escapeHtml(last.tipo || "") + " · " + daysAgoLabel(last.date) + "</div>" : '<span class="muted">Nunca</span>') + "</td>" +
+        '<td class="lead-actions"><button class="btn btn-sm" data-lead-contacto="' + l.id + '" data-stop>+ Contacto</button>' +
+          (cli ? "" : '<button class="btn btn-sm btn-ghost" data-lead-cliente="' + l.id + '" data-stop title="Passar a cliente da carteira">→ Cliente</button>') + "</td>" +
+        "</tr>";
+    }).join("");
+
+    var controls =
+      fSelect("leads", "distrito", mercado === "ES" ? "Todas as províncias" : "Todos os distritos", distritos, f.distrito, mercado === "ES" ? "Província" : "Distrito") +
+      fSelect("leads", "contacto", "Qualquer contacto", LEAD_CONTACTO_FILTERS, f.contacto, "Contacto");
+
+    return (
+      '<div class="page-head"><div><h1>Prospeção de mercado</h1><div class="sub">Empresas a conquistar — regista cada contacto e passa-as a cliente quando fecharem negócio</div></div>' +
+      '<div class="head-actions"><button class="btn btn-primary" data-lead-new>+ Nova empresa</button></div></div>' +
+      '<div class="lead-mercado" role="tablist" aria-label="Mercado">' + Object.keys(LEAD_MERCADOS).map(function (m) {
+        var n = state.leads.filter(function (l) { return (l.mercado || "PT") === m; }).length;
+        return '<button type="button" role="tab" class="lead-merc' + (mercado === m ? " on" : "") + '" aria-selected="' + (mercado === m ? "true" : "false") + '" data-lead-mercado="' + m + '">' +
+          (m === "PT" ? "🇵🇹 " : "🇪🇸 ") + LEAD_MERCADOS[m] + ' <span class="fcount">' + n + "</span></button>";
+      }).join("") + "</div>" +
+      '<div class="stat-grid">' +
+        statCard("Total de empresas", all.length, LEAD_MERCADOS[mercado]) +
+        statCard("Em prospeção", (countBy(all, function (l) { return l.estado; }).prospecao || 0), nunca + " ainda sem nenhum contacto") +
+        statCard("Em conversas", (countBy(all, function (l) { return l.estado; }).conversas || 0), "negócio em andamento") +
+        statCard("Passaram a cliente", (countBy(all, function (l) { return l.estado; }).cliente || 0), "desta lista") +
+        statCard("Contactos este mês", contactosMes, "emails, chamadas e visitas registados") +
+      "</div>" +
+      statusTabs("leads", LEAD_STATUS, counts, r.base.length, f.status) +
+      filterPanel(fSearch("leads", "Pesquisar empresa, NIF, email, telefone, notas…", f.q), controls) +
+      activeChips("leads", chips) +
+      resultBar(["<b>" + list.length + "</b> " + (list.length === 1 ? "empresa" : "empresas")], "leads") +
+      '<div class="panel"><div class="panel-body">' +
+      (list.length ? '<div class="table-wrap"><table class="data-table lead-table"><thead><tr>' +
+        sortTh("Empresa", "name", leadSort, "leads") + sortTh(mercado === "ES" ? "Província" : "Distrito", "distrito", leadSort, "leads") + "<th>Contacto</th>" +
+        sortTh("Estado", "estado", leadSort, "leads") + sortTh("Último contacto", "ultimo", leadSort, "leads") + "<th></th>" +
+        "</tr></thead><tbody>" + rows + "</tbody></table></div>"
+        : emptyState(all.length ? "Nenhuma empresa corresponde aos filtros." : "Ainda não há empresas nesta lista.", all.length ? '<button class="btn" data-f-scope="leads" data-f-clear="*">Limpar filtros</button>' : '<button class="btn btn-primary" data-lead-new>+ Nova empresa</button>')) +
+      "</div></div>"
+    );
+  }
+
+  function openLeadForm(id) {
+    var l = id ? leadById(id) : null;
+    var mercado = l ? l.mercado : (F.leads.mercado || "PT");
+    var distritos = uniqueSorted(state.leads.filter(function (x) { return x.mercado === mercado; }).map(function (x) { return x.distrito; }).filter(Boolean));
+    var cs = l ? (l.contactos || []).slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); }) : [];
+    var cli = l ? leadClientMatch(l) : null;
+    var body =
+      field("Empresa", '<input class="input" id="f-name" value="' + escapeHtml(l ? l.name : "") + '" required>', true) +
+      '<div class="field-row">' +
+        field("NIF / CIF", '<input class="input" id="f-nif" value="' + escapeHtml(l ? l.nif : "") + '">') +
+        field("Mercado", '<select class="input" id="f-mercado">' + Object.keys(LEAD_MERCADOS).map(function (m) { return '<option value="' + m + '"' + (m === mercado ? " selected" : "") + ">" + LEAD_MERCADOS[m] + "</option>"; }).join("") + "</select>") +
+      "</div>" +
+      '<div class="field-row">' +
+        field("Email", '<input class="input" type="email" id="f-email" value="' + escapeHtml(l ? l.email : "") + '">') +
+        field("Telefone", '<input class="input" id="f-phone" value="' + escapeHtml(l ? l.phone : "") + '">') +
+      "</div>" +
+      '<div class="field-row">' +
+        field(mercado === "ES" ? "Província" : "Distrito", '<input class="input" id="f-distrito" list="dl-distritos" value="' + escapeHtml(l ? l.distrito : "") + '">' + datalistHtml("dl-distritos", distritos)) +
+        field("Estado", '<select class="input" id="f-status">' + selectOptions(LEAD_STATUS, l ? l.estado : "prospecao") + "</select>") +
+      "</div>" +
+      '<div class="field-row">' +
+        field("Email de apresentação enviado em", '<input class="input" type="date" id="f-apres" value="' + escapeHtml(l ? l.emailApresentacao || "" : "") + '">') +
+        field("Campanhas", '<select class="input" id="f-campanhas">' + ["", "Enviadas", "Não enviar"].map(function (o) { var cur = l ? String(l.campanhas || "").toLowerCase() : ""; return '<option value="' + o + '"' + (cur === o.toLowerCase() ? " selected" : "") + ">" + (o || "—") + "</option>"; }).join("") + "</select>") +
+      "</div>" +
+      '<div class="field-row lead-checks">' +
+        '<label><input type="checkbox" id="f-newsletter"' + (l && l.newsletter ? " checked" : "") + "> Inscrito na newsletter</label>" +
+        '<label><input type="checkbox" id="f-whatsapp"' + (l && l.whatsapp ? " checked" : "") + "> Inscrito no WhatsApp</label>" +
+      "</div>" +
+      field("Observações", '<textarea class="input" id="f-notes">' + escapeHtml(l ? l.notes : "") + "</textarea>") +
+      (l ? '<div class="lead-hist"><div class="lead-hist-head"><b>Contactos (' + cs.length + ")</b>" +
+        '<button type="button" class="btn btn-sm" data-lead-contacto-dlg="' + l.id + '">+ Registar contacto</button></div>' +
+        (cs.length ? cs.map(function (c) {
+          return '<div class="lead-hist-row"><span class="mono">' + fmtDate(c.date) + "</span><span class=\"chip chip-neutral\">" + escapeHtml(c.tipo || "") + "</span><span>" + escapeHtml(c.texto || "") + "</span></div>";
+        }).join("") : '<div class="muted" style="font-size:13px">Ainda sem contactos registados.</div>') +
+        (cli ? '<div class="lead-hist-cli">Já está na carteira: <a href="#/clientes/' + encodeURIComponent(cli.id) + '">' + escapeHtml(cli.name) + "</a></div>" : "") +
+        "</div>" : "");
+    var foot = '<button class="btn" data-action="close-dialog">Cancelar</button>' +
+      (l ? '<button class="btn btn-ghost lead-del" id="lead-del-btn">Apagar</button>' : "") +
+      (l && !cli ? '<button class="btn" id="lead-cli-btn">→ Passar a cliente</button>' : "") +
+      '<button class="btn btn-primary" id="form-save-btn">Guardar</button>';
+    document.getElementById("form-dialog-title").textContent = l ? "Empresa em prospeção" : "Nova empresa";
+    document.getElementById("form-dialog-body").innerHTML = body;
+    document.getElementById("form-dialog-foot").innerHTML = foot;
+    formDialog.showModal();
+    document.getElementById("form-save-btn").addEventListener("click", function (e) {
+      e.preventDefault();
+      if (saveLead(id) !== false) formDialog.close();
+    });
+    var delBtn = document.getElementById("lead-del-btn");
+    if (delBtn) delBtn.addEventListener("click", function (e) {
+      e.preventDefault(); formDialog.close();
+      confirmAction("Apagar empresa", "Apagar \"" + l.name + "\" da lista de prospeção?", function () {
+        state.leads = state.leads.filter(function (x) { return x.id !== l.id; });
+        scheduleSave(); render(); toast("Empresa apagada.");
+      });
+    });
+    var cliBtn = document.getElementById("lead-cli-btn");
+    if (cliBtn) cliBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (saveLead(id) === false) return;
+      formDialog.close(); leadToClient(id);
+    });
+    var hBtn = document.querySelector("[data-lead-contacto-dlg]");
+    if (hBtn) hBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (saveLead(id) === false) return;
+      formDialog.close(); openLeadContact(id);
+    });
+    setTimeout(function () { var el = document.getElementById("f-name"); if (el && !l) el.focus(); }, 30);
+  }
+  function saveLead(id) {
+    var name = val("f-name");
+    if (!name) { toast("Indique o nome da empresa.", "error"); return false; }
+    var l = id ? leadById(id) : null;
+    if (!l) { l = { id: uid("lead"), createdAt: new Date().toISOString(), contactos: [] }; state.leads.push(l); }
+    l.name = name; l.nif = val("f-nif"); l.mercado = val("f-mercado") || "PT"; l.email = val("f-email"); l.phone = val("f-phone");
+    l.distrito = val("f-distrito"); l.estado = val("f-status") || "prospecao"; l.emailApresentacao = val("f-apres"); l.campanhas = val("f-campanhas");
+    l.newsletter = !!document.getElementById("f-newsletter").checked; l.whatsapp = !!document.getElementById("f-whatsapp").checked;
+    l.notes = val("f-notes"); l.updatedAt = new Date().toISOString();
+    scheduleSave(); render();
+    toast(id ? "Empresa atualizada." : "Empresa adicionada.");
+  }
+  function openLeadContact(id) {
+    var l = leadById(id);
+    if (!l) return;
+    document.getElementById("form-dialog-title").textContent = "Registar contacto — " + l.name;
+    document.getElementById("form-dialog-body").innerHTML =
+      '<div class="field-row">' +
+        field("Data", '<input class="input" type="date" id="f-date" value="' + todayISO() + '">') +
+        field("Como", '<select class="input" id="f-tipo">' + LEAD_CONTACT_TYPES.map(function (t) { return "<option>" + escapeHtml(t) + "</option>"; }).join("") + "</select>") +
+      "</div>" +
+      field("O que se falou / ficou combinado", '<textarea class="input" id="f-texto" rows="3" placeholder="Ex.: enviei catálogo de painéis; ligar em novembro…"></textarea>') +
+      field("Estado depois deste contacto", '<select class="input" id="f-status">' + selectOptions(LEAD_STATUS, l.estado === "prospecao" ? "prospecao" : l.estado) + "</select>") +
+      '<label class="lead-check1"><input type="checkbox" id="f-isapres"' + (l.emailApresentacao ? "" : "") + "> Foi o email de apresentação</label>" +
+      '<label class="lead-check1"><input type="checkbox" id="f-visita"> Agendar visita na carteira (cria o cliente em prospeção)</label>';
+    document.getElementById("form-dialog-foot").innerHTML = '<button class="btn" data-action="close-dialog">Cancelar</button><button class="btn btn-primary" id="form-save-btn">Guardar contacto</button>';
+    var tipoSel = document.getElementById("f-tipo");
+    var apres = document.getElementById("f-isapres");
+    tipoSel.addEventListener("change", function () { if (tipoSel.value !== "Email") apres.checked = false; });
+    formDialog.showModal();
+    document.getElementById("form-save-btn").addEventListener("click", function (e) {
+      e.preventDefault();
+      var c = { id: uid("lc"), date: val("f-date") || todayISO(), tipo: val("f-tipo"), texto: val("f-texto") };
+      l.contactos = Array.isArray(l.contactos) ? l.contactos : [];
+      l.contactos.push(c);
+      l.estado = val("f-status") || l.estado;
+      if (apres.checked) { l.emailApresentacao = c.date; }
+      if (c.tipo === "Newsletter / campanha") l.campanhas = "Enviadas";
+      l.updatedAt = new Date().toISOString();
+      var agendar = document.getElementById("f-visita").checked;
+      formDialog.close();
+      scheduleSave();
+      if (agendar) {
+        var cli = leadClientMatch(l) || createClientFromLead(l, "prospecao");
+        render();
+        openForm("visita", null, cli.id);
+        return;
+      }
+      render(); toast("Contacto registado.");
+    });
+  }
+  function createClientFromLead(l, status) {
+    var c = { id: uid("cli"), createdAt: new Date().toISOString(), name: l.name, nif: l.nif || "", email: l.email || "", phone: l.phone || "",
+      zona: l.distrito || "", city: "", address: "", postalCode: "", number: "", volta: "", visitFreq: 0, comercial: "", plafond: 0,
+      status: status || "ativo", notes: [l.notes, "Vindo da prospeção de mercado (" + (LEAD_MERCADOS[l.mercado] || l.mercado) + ")."].filter(Boolean).join("\n") };
+    state.clients.push(c);
+    l.clientId = c.id;
+    return c;
+  }
+  function leadToClient(id) {
+    var l = leadById(id);
+    if (!l) return;
+    var existing = leadClientMatch(l);
+    if (existing) { l.clientId = existing.id; l.estado = "cliente"; scheduleSave(); navigate("/clientes/" + encodeURIComponent(existing.id)); toast("Já estava na carteira — ligado."); return; }
+    confirmAction("Passar a cliente", "Criar \"" + l.name + "\" na carteira de clientes? Fica marcado como \"Já é cliente\" na prospeção.", function () {
+      var c = createClientFromLead(l, "ativo");
+      l.estado = "cliente"; l.updatedAt = new Date().toISOString();
+      scheduleSave();
+      navigate("/clientes/" + encodeURIComponent(c.id));
+      toast("Cliente criado na carteira.");
+    });
   }
 
   /* ============ Client detail ============ */
@@ -2833,6 +3141,32 @@
     content.querySelectorAll("[data-stop]").forEach(function (el) {
       el.addEventListener("click", function (e) { e.stopPropagation(); });
     });
+    // Prospeção (2026-10-27)
+    content.querySelectorAll("[data-lead-mercado]").forEach(function (el) {
+      el.addEventListener("click", function () { F.leads.mercado = el.getAttribute("data-lead-mercado"); F.leads.distrito = ""; saveFilters(); render(); });
+    });
+    content.querySelectorAll("[data-lead-new]").forEach(function (el) {
+      el.addEventListener("click", function () { openLeadForm(null); });
+    });
+    content.querySelectorAll("[data-lead-open]").forEach(function (el) {
+      el.addEventListener("click", function () { openLeadForm(el.getAttribute("data-lead-open")); });
+    });
+    content.querySelectorAll("[data-lead-contacto]").forEach(function (el) {
+      el.addEventListener("click", function (e) { e.stopPropagation(); openLeadContact(el.getAttribute("data-lead-contacto")); });
+    });
+    content.querySelectorAll("[data-lead-cliente]").forEach(function (el) {
+      el.addEventListener("click", function (e) { e.stopPropagation(); leadToClient(el.getAttribute("data-lead-cliente")); });
+    });
+    content.querySelectorAll("[data-lead-estado]").forEach(function (el) {
+      el.addEventListener("click", function (e) { e.stopPropagation(); });
+      el.addEventListener("change", function () {
+        var l = leadById(el.getAttribute("data-lead-estado"));
+        if (!l) return;
+        if (el.value === "cliente" && !leadClientMatch(l)) { el.value = l.estado; leadToClient(l.id); return; }
+        l.estado = el.value; l.updatedAt = new Date().toISOString();
+        scheduleSave(); render(); toast("Estado atualizado.");
+      });
+    });
 
     content.querySelectorAll("[data-route-freq]").forEach(function (el) {
       el.addEventListener("change", function (e) {
@@ -3014,6 +3348,15 @@
           statusMeta(VISIT_STATUS, v.status).label, v.result || "", v.notes || "", v.nextVisit || ""]);
       });
       n = lv.length; name = "visitas";
+    } else if (scope === "leads") {
+      var ll = filteredLeadList().list;
+      rows = [["Empresa", "NIF", "Mercado", "Distrito / Província", "Email", "Telefone", "Estado", "Email de apresentação", "Campanhas", "Newsletter", "WhatsApp", "Último contacto", "Contactos", "Observações"]];
+      ll.forEach(function (l) {
+        var last = leadLastContact(l);
+        rows.push([l.name, l.nif || "", LEAD_MERCADOS[l.mercado] || l.mercado || "", l.distrito || "", l.email || "", l.phone || "", statusMeta(LEAD_STATUS, l.estado).label,
+          l.emailApresentacao || "", l.campanhas || "", l.newsletter ? "Inscrito" : "", l.whatsapp ? "Inscrito" : "", last ? last.date : "", (l.contactos || []).length, l.notes || ""]);
+      });
+      n = ll.length; name = "prospecao";
     } else {
       var rc = filteredClientList(), lc = rc.list, st = rc.st;
       rows = [["Cliente", "Nº", "NIF", "Zona", "Volta", "Visitas/mês", "Comercial", "Estado", "Telefone", "Email", "Cidade", "Encomendas em aberto", "Vendas 12 meses (€)", "Última visita", "Próxima visita"]];
