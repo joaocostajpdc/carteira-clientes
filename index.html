@@ -2,6 +2,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   :root {
     --paper: #f3f4f8;
@@ -369,6 +371,27 @@
   .lead-hist-row { display: grid; grid-template-columns: 86px auto 1fr; gap: 8px; align-items: start; font-size: 13.5px; padding: 6px 0; border-bottom: 1px dashed var(--sand); }
   .lead-hist-cli { margin-top: 10px; font-size: 13.5px; }
   .lead-del { color: var(--danger); margin-right: auto; }
+  .lead-view { display: inline-flex; gap: 0; border: 1px solid var(--sand); border-radius: 9px; overflow: hidden; margin: 0 0 10px; background: var(--surface); }
+  .lead-vbtn { border: 0; background: none; padding: 8px 16px; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink-muted); cursor: pointer; }
+  .lead-vbtn.on { background: #1f3fe0; color: #fff; }
+  .lead-map-panel { overflow: hidden; }
+  .lead-map-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--sand); }
+  .lead-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-muted); }
+  .lead-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .lead-legend i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.2); }
+  .lead-legend i.cli { background: #1f3fe0; width: 8px; height: 8px; }
+  .lead-map-cli { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; cursor: pointer; }
+  .lead-map { height: calc(100vh - 330px); min-height: 460px; background: #e9edf2; }
+  .lead-map-foot { padding: 9px 14px; font-size: 12.5px; color: var(--ink-muted); border-top: 1px solid var(--sand); }
+  .lead-geo-run { color: #1f3fe0; font-weight: 600; }
+  .lead-pin { background: none; border: 0; display: flex; align-items: center; justify-content: center; }
+  .lead-pin span { display: block; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.45); }
+  .lead-pop { font: 13px/1.45 Inter, system-ui, sans-serif; min-width: 190px; display: flex; flex-direction: column; gap: 4px; }
+  .lead-pop b { font-size: 14px; }
+  .lead-pop-sub { color: #5f6b85; font-size: 12px; }
+  .lead-pop-act { display: flex; gap: 6px; margin-top: 6px; }
+  .lead-pop-act .btn { text-decoration: none; }
+  @media (max-width: 760px) { .lead-map { height: 62vh; min-height: 360px; } }
 
   /* Calendário de visitas (2026-10-15) */
   .view-toggle { display: inline-flex; border: 1px solid var(--sand-strong); border-radius: 8px; overflow: hidden; }
@@ -1958,15 +1981,201 @@
       statusTabs("leads", LEAD_STATUS, counts, r.base.length, f.status) +
       filterPanel(fSearch("leads", "Pesquisar empresa, NIF, email, telefone, notas…", f.q), controls) +
       activeChips("leads", chips) +
+      '<div class="lead-view" role="tablist" aria-label="Vista">' +
+        '<button type="button" role="tab" class="lead-vbtn' + (leadView === "lista" ? " on" : "") + '" aria-selected="' + (leadView === "lista") + '" data-lead-view="lista">☰ Lista</button>' +
+        '<button type="button" role="tab" class="lead-vbtn' + (leadView === "mapa" ? " on" : "") + '" aria-selected="' + (leadView === "mapa") + '" data-lead-view="mapa">⌖ Mapa</button>' +
+      "</div>" +
       resultBar(["<b>" + list.length + "</b> " + (list.length === 1 ? "empresa" : "empresas")], "leads") +
+      (leadView === "mapa" ? renderLeadMapShell(list) :
       '<div class="panel"><div class="panel-body">' +
       (list.length ? '<div class="table-wrap"><table class="data-table lead-table"><thead><tr>' +
         sortTh("Empresa", "name", leadSort, "leads") + sortTh(mercado === "ES" ? "Província" : "Distrito", "distrito", leadSort, "leads") + "<th>Contacto</th>" +
         sortTh("Estado", "estado", leadSort, "leads") + sortTh("Último contacto", "ultimo", leadSort, "leads") + "<th></th>" +
         "</tr></thead><tbody>" + rows + "</tbody></table></div>"
         : emptyState(all.length ? "Nenhuma empresa corresponde aos filtros." : "Ainda não há empresas nesta lista.", all.length ? '<button class="btn" data-f-scope="leads" data-f-clear="*">Limpar filtros</button>' : '<button class="btn btn-primary" data-lead-new>+ Nova empresa</button>')) +
-      "</div></div>"
+      "</div></div>")
     );
+  }
+
+  /* ---------- Mapa da prospeção (2026-10-27) ----------
+     Cada empresa fica num ponto do mapa, com a cor do estado. A posição é
+     procurada pelo próprio browser (OpenStreetMap / Nominatim) a partir da
+     localidade — tirada das observações ou escrita na ficha — e fica
+     guardada, por isso só se procura uma vez. Se não encontrar a
+     localidade, fica no centro do distrito/província (posição aproximada). */
+  var leadView = (function () { try { return localStorage.getItem("cc-lead-view") || "lista"; } catch (e) { return "lista"; } })();
+  var leadMap = null, leadMapLayer = null, leadMapView = null, leadMapShowClients = false;
+  var LEAD_COLORS = { prospecao: "#d97706", conversas: "#0d9488", cliente: "#16a34a", sem_interesse: "#98a2b3", concorrente: "#dc2626" };
+  var PAIS = { PT: "Portugal", ES: "España" };
+  function guessLocalidade(l) {
+    if (l.localidade) return l.localidade;
+    var t = String(l.notes || "").trim();
+    if (!t || /^contacto\s*:/i.test(t) || /^lançar|^lancar/i.test(t)) return "";
+    t = t.split(/\s+[—–-]\s+|\.\s+(?:Tel|Tlm|Telf|Site|Contacto)|;\s|\s+Tel\.|\s+Tlm\./)[0];
+    t = t.replace(/\(([^)]*)\)/g, ", $1")
+      .replace(/(^|,\s*)(Z\.\s*Ind\.?|Z\.\s*I\.?|Zona\s+Ind(ustrial)?\.?|Pol\.\s*Ind\.?|Pol\.|Polígono(\s+Industrial)?|Parque\s+(Ind(ustrial)?\.?|Empresarial|PISA)|Ctra\.?)\s*(de|da|do)?\s*/gi, "$1")
+      .replace(/(^|,\s*)(EN|N)\s*\d+[^,]*/gi, "$1");
+    t = t.replace(/\s+,/g, ",").replace(/\s*,\s*,/g, ",").replace(/^[\s,]+|[\s,.]+$/g, "").trim();
+    if (t.length > 60 || /alum[ií]nio|caixilharia|serralharia|fabricante|janelas|n[ãa]o enviar|enviadas|iniciadas|pedido|or[çc]amento|contactar|ligar|email|cliente|visita|falar|enviar|interess|concorr|\d{3}\s?\d{3}/i.test(t)) return "";
+    return t;
+  }
+  function leadGeoQuery(l) {
+    var loc = guessLocalidade(l);
+    return [loc, l.distrito, PAIS[l.mercado] || ""].filter(Boolean).join(", ");
+  }
+  function renderLeadMapShell(list) {
+    var geo = list.filter(function (l) { return typeof l.lat === "number"; }).length;
+    var aprox = list.filter(function (l) { return typeof l.lat === "number" && l.geoPrec === "distrito"; }).length;
+    var falta = list.length - geo;
+    return '<div class="panel lead-map-panel"><div class="lead-map-bar">' +
+      '<div class="lead-legend">' + Object.keys(LEAD_STATUS).map(function (k) {
+        return '<span><i style="background:' + LEAD_COLORS[k] + '"></i>' + escapeHtml(LEAD_STATUS[k].label) + "</span>";
+      }).join("") + '<span><i class="cli"></i>Clientes da carteira</span></div>' +
+      '<label class="lead-map-cli"><input type="checkbox" id="lead-map-clients"' + (leadMapShowClients ? " checked" : "") + "> Mostrar clientes da carteira</label>" +
+      "</div>" +
+      '<div id="lead-map" class="lead-map" aria-label="Mapa das empresas em prospeção"></div>' +
+      '<div class="lead-map-foot" id="lead-map-foot">' + leadGeoStatusText(list.length, geo, aprox, falta) + "</div></div>";
+  }
+  function leadGeoStatusText(total, geo, aprox, falta) {
+    var parts = ["<b>" + geo + "</b> de " + total + " no mapa"];
+    if (aprox) parts.push(aprox + " em posição aproximada (centro do distrito) — escreve a localidade na ficha para acertar");
+    if (falta) parts.push(geoRunning ? '<span class="lead-geo-run">A localizar ' + falta + " empresas… (cerca de " + Math.ceil(falta * 1.1 / 60) + " min)</span>" : falta + " por localizar");
+    return parts.join(" · ");
+  }
+
+  // Fila de localização (1 pedido por segundo, como pede o OpenStreetMap).
+  var geoRunning = false, geoDistritoCache = {};
+  function nominatim(q, cc) {
+    var url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=pt&countrycodes=" + cc + "&q=" + encodeURIComponent(q);
+    return fetch(url, { headers: { Accept: "application/json" } }).then(function (r) { return r.ok ? r.json() : []; }).then(function (j) {
+      return j && j[0] ? { lat: parseFloat(j[0].lat), lng: parseFloat(j[0].lon) } : null;
+    }).catch(function () { return null; });
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function jitter(id) {
+    var h = 0; for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    return [((h % 1000) / 1000 - 0.5) * 0.06, (((h / 1000) % 1000) / 1000 - 0.5) * 0.08];
+  }
+  function startLeadGeocoding() {
+    if (geoRunning) return;
+    var queue = state.leads.filter(function (l) { return typeof l.lat !== "number" || l.geoQ !== leadGeoQuery(l); });
+    if (!queue.length) return;
+    geoRunning = true;
+    var done = 0;
+    (async function () {
+      for (var i = 0; i < queue.length; i++) {
+        var l = leadById(queue[i].id); // o estado pode ter sido recarregado entretanto
+        if (!l || (typeof l.lat === "number" && l.geoQ === leadGeoQuery(l))) continue;
+        var q = leadGeoQuery(l), cc = l.mercado === "ES" ? "es" : "pt";
+        var loc = guessLocalidade(l);
+        var pos = null, prec = "local";
+        if (loc) { pos = await nominatim(q, cc); await sleep(1100); }
+        if (!pos && loc && loc.indexOf(",") > -1) {
+          // tenta só a última parte (ex.: "Forjães, Esposende" → "Esposende")
+          pos = await nominatim(loc.split(",").pop().trim() + ", " + (l.distrito || "") + ", " + (PAIS[l.mercado] || ""), cc); await sleep(1100);
+        }
+        if (!pos && l.distrito) {
+          var dk = cc + "|" + l.distrito;
+          if (!(dk in geoDistritoCache)) { geoDistritoCache[dk] = await nominatim(l.distrito + ", " + (PAIS[l.mercado] || ""), cc); await sleep(1100); }
+          var d = geoDistritoCache[dk];
+          if (d) { var j = jitter(l.id); pos = { lat: d.lat + j[0], lng: d.lng + j[1] }; prec = "distrito"; }
+        }
+        if (pos) { l.lat = pos.lat; l.lng = pos.lng; l.geoPrec = prec; }
+        else { l.lat = null; l.lng = null; l.geoPrec = "nao"; }
+        l.geoQ = q;
+        done++;
+        if (done % 8 === 0 || i === queue.length - 1) scheduleSave();
+        if (leadMap && route.page === "prospecao" && leadView === "mapa") drawLeadMarkers(false);
+      }
+      geoRunning = false;
+      scheduleSave();
+      if (route.page === "prospecao" && leadView === "mapa") drawLeadMarkers(false);
+    })();
+  }
+  function markerIcon(color, small) {
+    var sz = small ? 10 : 14;
+    return L.divIcon({ className: "lead-pin", html: '<span style="background:' + color + ";width:" + sz + "px;height:" + sz + 'px"></span>', iconSize: [sz + 4, sz + 4], iconAnchor: [(sz + 4) / 2, (sz + 4) / 2] });
+  }
+  function initLeadMap() {
+    var el = document.getElementById("lead-map");
+    if (!el || typeof L === "undefined") {
+      if (el) el.innerHTML = '<div class="empty-state">Não foi possível carregar o mapa (sem ligação à internet?).</div>';
+      return;
+    }
+    if (leadMap) { try { leadMapView = { c: leadMap.getCenter(), z: leadMap.getZoom() }; leadMap.remove(); } catch (e) {} leadMap = null; }
+    leadMap = L.map(el, { scrollWheelZoom: true });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "© OpenStreetMap" }).addTo(leadMap);
+    leadMapLayer = L.layerGroup().addTo(leadMap);
+    var cb = document.getElementById("lead-map-clients");
+    if (cb) cb.addEventListener("change", function () { leadMapShowClients = cb.checked; if (leadMapShowClients) startClientGeocoding(); drawLeadMarkers(false); });
+    drawLeadMarkers(!leadMapView);
+    if (leadMapView) leadMap.setView(leadMapView.c, leadMapView.z);
+    startLeadGeocoding();
+    if (leadMapShowClients) startClientGeocoding();
+  }
+  function drawLeadMarkers(fit) {
+    if (!leadMap || !leadMapLayer) return;
+    leadMapLayer.clearLayers();
+    var list = filteredLeadList().list;
+    var pts = [];
+    list.forEach(function (l) {
+      if (typeof l.lat !== "number" || typeof l.lng !== "number") return;
+      var m = L.marker([l.lat, l.lng], { icon: markerIcon(LEAD_COLORS[l.estado] || "#d97706"), title: l.name, riseOnHover: true });
+      var last = leadLastContact(l);
+      m.bindPopup('<div class="lead-pop"><b>' + escapeHtml(l.name) + "</b>" +
+        '<div class="lead-pop-sub">' + escapeHtml([guessLocalidade(l), l.distrito].filter(Boolean).join(", ")) + (l.geoPrec === "distrito" ? ' <span class="muted">(aprox.)</span>' : "") + "</div>" +
+        '<div><span class="chip ' + statusMeta(LEAD_STATUS, l.estado).cls + '">' + escapeHtml(statusMeta(LEAD_STATUS, l.estado).label) + "</span></div>" +
+        (l.phone ? '<div><a href="tel:' + escapeHtml(String(l.phone).replace(/\s+/g, "")) + '">' + escapeHtml(l.phone) + "</a></div>" : "") +
+        (l.email ? '<div><a href="mailto:' + escapeHtml(l.email) + '">' + escapeHtml(l.email) + "</a></div>" : "") +
+        '<div class="lead-pop-sub">Último contacto: ' + (last ? fmtDate(last.date) + " (" + escapeHtml(last.tipo || "") + ")" : "nunca") + "</div>" +
+        '<div class="lead-pop-act"><button class="btn btn-sm" data-pop-contacto="' + l.id + '">+ Contacto</button><button class="btn btn-sm btn-primary" data-pop-open="' + l.id + '">Abrir ficha</button></div></div>');
+      m.addTo(leadMapLayer);
+      pts.push([l.lat, l.lng]);
+    });
+    if (leadMapShowClients) {
+      state.clients.forEach(function (c) {
+        if (typeof c.lat !== "number") return;
+        L.marker([c.lat, c.lng], { icon: markerIcon("#1f3fe0", true), title: c.name, zIndexOffset: -500 })
+          .bindPopup('<div class="lead-pop"><b>' + escapeHtml(c.name) + '</b><div class="lead-pop-sub">Cliente da carteira' + (c.zona ? " · " + escapeHtml(c.zona) : "") + '</div><div class="lead-pop-act"><a class="btn btn-sm btn-primary" href="#/clientes/' + encodeURIComponent(c.id) + '">Abrir cliente</a></div></div>')
+          .addTo(leadMapLayer);
+      });
+    }
+    if (fit) {
+      if (pts.length) leadMap.fitBounds(pts, { padding: [30, 30], maxZoom: 11 });
+      else leadMap.setView(F.leads.mercado === "ES" ? [40.2, -3.7] : [39.6, -8.1], 6);
+    }
+    var foot = document.getElementById("lead-map-foot");
+    if (foot) {
+      var geo = list.filter(function (l) { return typeof l.lat === "number"; }).length;
+      var aprox = list.filter(function (l) { return typeof l.lat === "number" && l.geoPrec === "distrito"; }).length;
+      foot.innerHTML = leadGeoStatusText(list.length, geo, aprox, list.length - geo);
+    }
+  }
+  // Clientes da carteira no mapa (para juntar prospeção às voltas).
+  var clientGeoRunning = false;
+  function startClientGeocoding() {
+    if (clientGeoRunning) return;
+    var queue = state.clients.filter(function (c) {
+      var q = [c.address, c.postalCode, c.city || c.zona].filter(Boolean).join(", ");
+      return q && (typeof c.lat !== "number" || c.geoQ !== q);
+    });
+    if (!queue.length) return;
+    clientGeoRunning = true;
+    (async function () {
+      for (var i = 0; i < queue.length; i++) {
+        var c = clientById(queue[i].id);
+        if (!c) continue;
+        var q = [c.address, c.postalCode, c.city || c.zona].filter(Boolean).join(", ");
+        var pos = await nominatim(q + ", Portugal", "pt"); await sleep(1100);
+        if (!pos && (c.city || c.zona)) { pos = await nominatim((c.city || c.zona) + ", Portugal", "pt"); await sleep(1100); }
+        if (pos) { c.lat = pos.lat; c.lng = pos.lng; }
+        c.geoQ = q;
+        if (i % 8 === 7 || i === queue.length - 1) scheduleSave();
+        if (leadMap && leadMapShowClients) drawLeadMarkers(false);
+      }
+      clientGeoRunning = false;
+      scheduleSave();
+    })();
   }
 
   function openLeadForm(id) {
@@ -1987,6 +2196,9 @@
       "</div>" +
       '<div class="field-row">' +
         field(mercado === "ES" ? "Província" : "Distrito", '<input class="input" id="f-distrito" list="dl-distritos" value="' + escapeHtml(l ? l.distrito : "") + '">' + datalistHtml("dl-distritos", distritos)) +
+        field("Localidade (para o mapa)", '<input class="input" id="f-localidade" placeholder="Ex.: Forjães, Esposende" value="' + escapeHtml(l ? guessLocalidade(l) : "") + '">') +
+      "</div>" +
+      '<div class="field-row">' +
         field("Estado", '<select class="input" id="f-status">' + selectOptions(LEAD_STATUS, l ? l.estado : "prospecao") + "</select>") +
       "</div>" +
       '<div class="field-row">' +
@@ -2045,7 +2257,7 @@
     var l = id ? leadById(id) : null;
     if (!l) { l = { id: uid("lead"), createdAt: new Date().toISOString(), contactos: [] }; state.leads.push(l); }
     l.name = name; l.nif = val("f-nif"); l.mercado = val("f-mercado") || "PT"; l.email = val("f-email"); l.phone = val("f-phone");
-    l.distrito = val("f-distrito"); l.estado = val("f-status") || "prospecao"; l.emailApresentacao = val("f-apres"); l.campanhas = val("f-campanhas");
+    l.distrito = val("f-distrito"); l.localidade = val("f-localidade"); l.estado = val("f-status") || "prospecao"; l.emailApresentacao = val("f-apres"); l.campanhas = val("f-campanhas");
     l.newsletter = !!document.getElementById("f-newsletter").checked; l.whatsapp = !!document.getElementById("f-whatsapp").checked;
     l.notes = val("f-notes"); l.updatedAt = new Date().toISOString();
     scheduleSave(); render();
@@ -3017,6 +3229,13 @@
   }
 
   /* ============ Event delegation ============ */
+  // Botões dentro dos balões do mapa (criados pelo Leaflet fora do conteúdo).
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest("[data-pop-open],[data-pop-contacto]");
+    if (!a) return;
+    if (a.hasAttribute("data-pop-open")) openLeadForm(a.getAttribute("data-pop-open"));
+    else openLeadContact(a.getAttribute("data-pop-contacto"));
+  });
   function bindContentActions() {
     var content = document.getElementById("content");
     if (!content) return;
@@ -3142,8 +3361,18 @@
       el.addEventListener("click", function (e) { e.stopPropagation(); });
     });
     // Prospeção (2026-10-27)
+    content.querySelectorAll("[data-lead-view]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        leadView = el.getAttribute("data-lead-view");
+        try { localStorage.setItem("cc-lead-view", leadView); } catch (e) {}
+        if (leadMap) { try { leadMap.remove(); } catch (e2) {} leadMap = null; leadMapView = null; }
+        render();
+      });
+    });
+    if (document.getElementById("lead-map")) initLeadMap();
+    else if (leadMap) { try { leadMap.remove(); } catch (e3) {} leadMap = null; }
     content.querySelectorAll("[data-lead-mercado]").forEach(function (el) {
-      el.addEventListener("click", function () { F.leads.mercado = el.getAttribute("data-lead-mercado"); F.leads.distrito = ""; saveFilters(); render(); });
+      el.addEventListener("click", function () { F.leads.mercado = el.getAttribute("data-lead-mercado"); F.leads.distrito = ""; saveFilters(); leadMapView = null; if (leadMap) { try { leadMap.remove(); } catch (e) {} leadMap = null; } render(); });
     });
     content.querySelectorAll("[data-lead-new]").forEach(function (el) {
       el.addEventListener("click", function () { openLeadForm(null); });
