@@ -1008,13 +1008,35 @@
     saveTimer = setTimeout(doSave, 550);
   }
 
+  // Envia para os registos do servidor o que correu mal nesta página (2026-10-28).
+  function reportProblem(msg) {
+    try {
+      fetch("/api/client-log", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ msg: String(msg).slice(0, 2000) }) }).catch(function () {});
+    } catch (e) {}
+  }
+  window.addEventListener("error", function (ev) {
+    reportProblem("erro JS: " + (ev && ev.message) + " @ " + (ev && ev.filename) + ":" + (ev && ev.lineno));
+  });
+  window.addEventListener("unhandledrejection", function (ev) {
+    reportProblem("promessa rejeitada: " + (ev && ev.reason && (ev.reason.stack || ev.reason.message || ev.reason)));
+  });
+
+  var saveFailCount = 0;
   function doSave() {
     saveLocalBackup();
+    var body;
+    try { body = JSON.stringify(state); }
+    catch (err) {
+      setSaveIndicator("error", "Erro ao guardar (dados inválidos)");
+      reportProblem("JSON.stringify falhou: " + (err && err.message));
+      return;
+    }
     fetch("/api/state", {
       method: "PUT",
       headers: { "Content-Type": "application/json", "X-State-Rev": stateRev || "" },
       credentials: "same-origin",
-      body: JSON.stringify(state)
+      body: body
     }).then(function (res) {
       if (res.status === 401) { savePending = false; showLoginGate(); return; }
       if (res.status === 409) {
@@ -1026,8 +1048,13 @@
       }
       var newRev = res.headers.get("X-State-Rev");
       if (newRev) stateRev = newRev;
-      if (!res.ok) throw new Error("save failed");
+      if (!res.ok) {
+        var e = new Error("HTTP " + res.status);
+        e.httpStatus = res.status;
+        throw e;
+      }
       savePending = false;
+      saveFailCount = 0;
       setSaveIndicator("saved", "Guardado");
       // O servidor guarda os PDFs à parte e devolve a referência — troca-se aqui
       // para as gravações seguintes já irem pequenas (2026-10-22).
@@ -1039,9 +1066,14 @@
         });
         saveLocalBackup();
       }).catch(function () {});
-    }).catch(function () {
-      setSaveIndicator("error", "Erro ao guardar — nova tentativa em breve");
-      saveTimer = setTimeout(doSave, 2500);
+    }).catch(function (err) {
+      saveFailCount++;
+      var why = (err && err.message) || "sem resposta";
+      setSaveIndicator("error", "Erro ao guardar (" + why + ") — nova tentativa em breve");
+      if (saveFailCount === 1 || saveFailCount % 10 === 0) {
+        reportProblem("gravação falhou (" + saveFailCount + "x): " + why + " | rev=" + (stateRev || "vazio") + " | " + body.length + " chars | online=" + navigator.onLine);
+      }
+      saveTimer = setTimeout(doSave, Math.min(2500 * saveFailCount, 30000));
     });
   }
 

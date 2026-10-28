@@ -25,6 +25,18 @@ app.set("trust proxy", 1);
 app.use(express.json({ limit: "60mb" }));
 app.use(cookieParser());
 
+// Diagnóstico (2026-10-28): regista o resultado de cada gravação para se
+// perceber porque é que uma falha (antes só os erros da base de dados ficavam
+// nos registos).
+app.use("/api/state", (req, res, next) => {
+  if (req.method !== "PUT") return next();
+  const t0 = Date.now();
+  res.on("finish", () => {
+    console.log("[gravar] PUT /api/state -> " + res.statusCode + " (" + (req.get("content-length") || "?") + " bytes, rev=" + (req.get("X-State-Rev") || "vazio") + ", " + (Date.now() - t0) + " ms)");
+  });
+  next();
+});
+
 /* ---------- session helpers ---------- */
 function makeToken() {
   const exp = String(Date.now() + SESSION_MAX_AGE_MS);
@@ -130,6 +142,17 @@ app.get("/api/files/:id", requireAuth, async (req, res) => {
   }
 });
 
+// Erros vistos na página (falhas a gravar, erros de JavaScript) — ficam nos
+// registos do servidor para se poder diagnosticar à distância.
+app.post("/api/client-log", express.json({ limit: "20kb" }), (req, res) => {
+  const b = req.body || {};
+  const msg = String(b.msg || "").slice(0, 2000);
+  const ua = String(req.get("user-agent") || "").slice(0, 160);
+  const auth = verifyToken(req.cookies && req.cookies.session) ? "sessão ok" : "sem sessão";
+  console.warn("[página] " + msg + " | " + auth + " | " + ua);
+  res.json({ ok: true });
+});
+
 app.put("/api/state", requireAuth, async (req, res) => {
   const data = req.body;
   if (!data || typeof data !== "object" || Array.isArray(data)) {
@@ -141,7 +164,7 @@ app.put("/api/state", requireAuth, async (req, res) => {
   // gravação tem de indicar a versão que a página carregou; se entretanto
   // alguém gravou, recusa (409) e a página vai buscar a versão nova.
   const rev = req.get("X-State-Rev");
-  if (!rev) return res.status(409).json({ error: "stale" });
+  if (!rev) { console.warn("[gravar] recusado: página sem versão (X-State-Rev vazio)"); return res.status(409).json({ error: "stale" }); }
   let files = {};
   try {
     files = await extractFiles(data, pool);
@@ -149,7 +172,11 @@ app.put("/api/state", requireAuth, async (req, res) => {
       "UPDATE app_state SET data = $1, updated_at = now() WHERE id = 1 AND updated_at::text = $2 RETURNING updated_at::text AS rev",
       [JSON.stringify(data), rev]
     );
-    if (!r.rows.length) return res.status(409).json({ error: "stale" });
+    if (!r.rows.length) {
+      const cur = await pool.query("SELECT updated_at::text AS rev FROM app_state WHERE id = 1");
+      console.warn("[gravar] recusado: versão da página " + rev + " ≠ versão atual " + (cur.rows[0] && cur.rows[0].rev));
+      return res.status(409).json({ error: "stale" });
+    }
     res.setHeader("X-State-Rev", r.rows[0].rev);
     res.json({ ok: true, files, rev: r.rows[0].rev });
   } catch (err) {
