@@ -374,6 +374,51 @@
   .lead-view { display: inline-flex; gap: 0; border: 1px solid var(--sand); border-radius: 9px; overflow: hidden; margin: 0 0 10px; background: var(--surface); }
   .lead-vbtn { border: 0; background: none; padding: 8px 16px; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink-muted); cursor: pointer; }
   .lead-vbtn.on { background: #1f3fe0; color: #fff; }
+  /* Mapa dos clientes por concelho (2026-10-30) */
+  .cm-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 10px; }
+  .cm-bar-lbl { font-size: 13px; color: var(--ink-muted); margin-right: 2px; }
+  .cm-cat { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--sand); background: var(--surface); color: var(--ink-muted); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  .cm-cat i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; opacity: .35; }
+  .cm-cat.on { color: var(--ink); border-color: var(--ink-muted); font-weight: 600; }
+  .cm-cat.on i { opacity: 1; }
+  .cm-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); gap: 12px; align-items: start; }
+  @media (max-width: 900px) { .cm-grid { grid-template-columns: 1fr; } }
+  .cm-mappanel { overflow: hidden; }
+  .cm-crumb { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 9px 12px; border-bottom: 1px solid var(--sand); font-size: 13.5px; }
+  .cm-crumb .sep { color: var(--ink-muted); }
+  .cm-cr { border: 0; background: none; font: inherit; color: #1f3fe0; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+  .cm-cr:hover { background: var(--surface-2); }
+  .cm-cr.cur { color: var(--ink); font-weight: 700; cursor: default; }
+  .cm-map { height: calc(100vh - 300px); min-height: 520px; background: #eef3f8; }
+  .cm-foot { padding: 8px 12px; font-size: 12.5px; color: var(--ink-muted); border-top: 1px solid var(--sand); }
+  .cm-grid > .panel + .panel { margin-top: 0; }
+  .cm-side { padding: 0; max-height: calc(100vh - 210px); min-height: 520px; overflow: auto; }
+  .cm-side-h { padding: 14px 16px 10px; border-bottom: 1px solid var(--sand); position: sticky; top: 0; background: var(--surface); z-index: 1; }
+  .cm-side-h h2 { margin: 0 0 2px; font-size: 18px; }
+  .cm-side-h .sub { font-size: 13px; color: var(--ink-muted); margin-bottom: 6px; }
+  .cm-sum { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; margin: 2px 10px 0 0; color: var(--ink-muted); }
+  .cm-sum i, .cm-row i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+  .cm-grp { padding: 8px 10px 4px; }
+  .cm-grp-h { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); padding: 6px 6px 4px; display: flex; align-items: center; gap: 6px; }
+  .cm-grp-btn { border: 0; background: none; font: inherit; text-transform: uppercase; letter-spacing: .04em; color: #1f3fe0; cursor: pointer; padding: 0; font-weight: 700; }
+  .cm-hint { font-size: 12.5px; color: var(--ink-muted); padding: 0 6px 6px; }
+  .cm-list { padding: 6px 10px 10px; }
+  .cm-row { display: flex; width: 100%; align-items: center; gap: 10px; border: 0; background: none; text-align: left; font: inherit; color: var(--ink); padding: 8px 6px; border-radius: 8px; cursor: pointer; }
+  .cm-row:hover { background: var(--surface-2); }
+  .cm-row-t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .cm-row-n { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cm-row-s { font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cm-drow i { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(0,0,0,.15); }
+  .cm-dlabel, .cm-clabel { background: none; border: 0; }
+  .cm-dlabel { display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -50%); cursor: pointer; white-space: nowrap; }
+  .cm-dlabel .nm { font-weight: 800; font-size: 12.5px; color: #1f2937; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; }
+  .cm-dlabel.small .nm { font-size: 11px; font-weight: 600; color: #4b5563; }
+  .cm-dlabel .n, .cm-clabel .n { background: #1f3fe0; color: #fff; font-weight: 700; font-size: 11.5px; border-radius: 999px; padding: 1px 7px; margin-top: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .cm-clabel { display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -50%); cursor: pointer; white-space: nowrap; }
+  .cm-clabel .nm { font-size: 10.5px; font-weight: 600; color: #1f2937; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; }
+  .cm-clabel.zero .nm { font-weight: 500; color: #6b7280; }
+  .cm-clabel.sel .n { background: #111827; }
+  .cm-tip { font-weight: 600; }
   .lead-map-panel { overflow: hidden; }
   .lead-map-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--sand); }
   .lead-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-muted); }
@@ -1137,6 +1182,7 @@
   });
 
   function finishInit() {
+    loadPtGeo(); // limites dos concelhos (mapa dos clientes e campo Concelho na ficha)
     render();
   }
 
@@ -1895,9 +1941,15 @@
       fSelect("clients", "comercial", "Todos os comerciais", comerciais, f.comercial, "Comercial") +
       fSelect("clients", "activity", "Qualquer atividade", CLIENT_ACTIVITY, f.activity, "Atividade");
 
+    var viewToggle = '<div class="lead-view" role="tablist" aria-label="Vista">' +
+        '<button type="button" role="tab" class="lead-vbtn' + (cliView !== "mapa" ? " on" : "") + '" aria-selected="' + (cliView !== "mapa") + '" data-cli-view="lista">☰ Lista</button>' +
+        '<button type="button" role="tab" class="lead-vbtn' + (cliView === "mapa" ? " on" : "") + '" aria-selected="' + (cliView === "mapa") + '" data-cli-view="mapa">⌖ Mapa por concelho</button>' +
+      "</div>";
+    var head = '<div class="page-head"><div><h1>Clientes</h1><div class="sub">' + state.clients.length + " na carteira</div></div>" +
+      '<div class="head-actions"><button class="btn btn-primary" data-open-form="cliente">+ Novo cliente</button></div></div>';
+    if (cliView === "mapa") return head + viewToggle + renderCliMapShell();
     return (
-      '<div class="page-head"><div><h1>Clientes</h1><div class="sub">' + state.clients.length + " na carteira</div></div>" +
-      '<div class="head-actions"><button class="btn btn-primary" data-open-form="cliente">+ Novo cliente</button></div></div>' +
+      head + viewToggle +
       statusTabs("clients", CLIENT_STATUS, counts, r.base.length, f.status) +
       filterPanel(fSearch("clients", "Pesquisar nome, NIF, telefone, cidade…", f.q), controls) +
       activeChips("clients", chips) +
@@ -1915,6 +1967,421 @@
         : emptyState(state.clients.length ? "Nenhum cliente corresponde aos filtros." : "Ainda não tem clientes registados.", state.clients.length ? '<button class="btn" data-f-scope="clients" data-f-clear="*">Limpar filtros</button>' : '<button class="btn btn-primary" data-open-form="cliente">+ Novo cliente</button>')) +
       "</div></div>"
     );
+  }
+
+  /* ============ Mapa dos clientes por distrito / concelho (2026-10-30) ============
+     Pedido do João (folha com o mapa de Portugal): "clico em Esposende aparecem
+     todos de lá; clico no concelho de Viana aparecem os de Viana; clico no
+     distrito aparecem os do distrito… clientes em conversas…".
+     Os limites são os oficiais (CAOP, Direção-Geral do Território), simplificados
+     e guardados em pt_mapa.json. Cada cliente fica no concelho escolhido na
+     ficha; se não tiver, o programa deduz pelo texto da Zona/Cidade/Morada
+     (concelho ou freguesia) ou pela posição no mapa da prospeção. */
+  var cliView = (function () { try { return localStorage.getItem("cc-cli-view") || "lista"; } catch (e) { return "lista"; } })();
+  var PTGEO = null, ptGeoWaiters = null, ptConcByName = {};
+  function loadPtGeo(cb) {
+    if (PTGEO) { if (cb) cb(PTGEO); return; }
+    if (ptGeoWaiters) { if (cb) ptGeoWaiters.push(cb); return; }
+    ptGeoWaiters = cb ? [cb] : [];
+    fetch("/pt_mapa.json", { credentials: "same-origin" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (g) {
+        PTGEO = g;
+        g.concelhos.features.forEach(function (f) {
+          var p = f.properties;
+          p.bbox = geoBBox(f.geometry);
+          ptConcByName[normPlace(p.c)] = p.i;
+        });
+        var w = ptGeoWaiters; ptGeoWaiters = null;
+        w.forEach(function (fn) { try { fn(g); } catch (e) { reportProblem("mapa: " + e.message); } });
+      }).catch(function (err) {
+        var w = ptGeoWaiters; ptGeoWaiters = null;
+        reportProblem("mapa: não carregou pt_mapa.json (" + err.message + ")");
+        w.forEach(function (fn) { try { fn(null); } catch (e) {} });
+      });
+  }
+  function geoBBox(geom) {
+    var b = [180, 90, -180, -90];
+    (geom.type === "Polygon" ? [geom.coordinates] : geom.coordinates).forEach(function (poly) {
+      poly[0].forEach(function (pt) { if (pt[0] < b[0]) b[0] = pt[0]; if (pt[1] < b[1]) b[1] = pt[1]; if (pt[0] > b[2]) b[2] = pt[0]; if (pt[1] > b[3]) b[3] = pt[1]; });
+    });
+    return b;
+  }
+  function inRing(x, y, ring) {
+    var inside = false;
+    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      var xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+  function concelhoAt(lat, lng) {
+    if (!PTGEO) return -1;
+    var fs = PTGEO.concelhos.features;
+    for (var k = 0; k < fs.length; k++) {
+      var p = fs[k].properties, b = p.bbox, g = fs[k].geometry;
+      if (lng < b[0] || lng > b[2] || lat < b[1] || lat > b[3]) continue;
+      var polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
+      for (var m = 0; m < polys.length; m++) {
+        if (inRing(lng, lat, polys[m][0])) {
+          var hole = false;
+          for (var h = 1; h < polys[m].length; h++) if (inRing(lng, lat, polys[m][h])) hole = true;
+          if (!hole) return p.i;
+        }
+      }
+    }
+    return -1;
+  }
+  function normPlace(s) {
+    s = String(s || "").toLowerCase()
+      .replace(/\bv\.\s*n\.\s*(de\s+)?/g, "vila nova de ")
+      .replace(/\bp\.\s*(de\s+)?varzim/g, "povoa de varzim")
+      .replace(/\bsta\.\s*/g, "santa ").replace(/\bsto\.\s*/g, "santo ").replace(/\bs\.\s*/g, "sao ");
+    return s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  // Nomes curtos ou freguesias usados na carteira que não batem certo com a lista oficial.
+  var PLACE_ALIASES = {
+    "barca": "Ponte da Barca", "ponte lima": "Ponte de Lima", "viana": "Viana do Castelo", "neiva": "Viana do Castelo",
+    "anha": "Viana do Castelo", "famalicao": "Vila Nova de Famalicão", "gaia": "Vila Nova de Gaia", "cerveira": "Vila Nova de Cerveira",
+    "valenca do minho": "Valença", "povoa": "Póvoa de Varzim", "santo tirso": "Santo Tirso", "lisbon": "Lisboa"
+  };
+  var HOME_DISTRITOS = ["Viana do Castelo", "Braga", "Porto"];
+  function concProps(i) { return PTGEO && i >= 0 ? PTGEO.concelhos.features[i].properties : null; }
+  function distritoNames() { return PTGEO ? PTGEO.distritos.features.map(function (f) { return f.properties.d; }) : []; }
+  function matchDistrito(s) {
+    var n = normPlace(s);
+    if (!n) return "";
+    var ds = distritoNames();
+    for (var i = 0; i < ds.length; i++) if (normPlace(ds[i]) === n) return ds[i];
+    return "";
+  }
+  // Devolve o índice do concelho (ou -1) a partir de vários textos.
+  function resolveConcelho(texts, hintDistrito) {
+    if (!PTGEO) return -1;
+    var parts = [];
+    texts.forEach(function (t) {
+      if (!t) return;
+      var s = String(t);
+      parts.push(s);
+      s.split(/[,;()\/]|\s[—–-]\s|\s-\s/).forEach(function (x) { parts.push(x); });
+    });
+    var ns = [];
+    parts.forEach(function (p) { var n = normPlace(p).replace(/^(z ind|zona industrial|parque industrial|parque empresarial|lugar d[eoa]s?|lugar)\s+(de |da |do )?/, ""); if (n && ns.indexOf(n) === -1) ns.push(n); });
+    function pick(cands) {
+      if (!cands.length) return -1;
+      if (cands.length === 1) return cands[0];
+      if (hintDistrito) { var h = cands.filter(function (i) { return concProps(i).d === hintDistrito; }); if (h.length) return h[0]; }
+      for (var k = 0; k < HOME_DISTRITOS.length; k++) { var hd = cands.filter(function (i) { return concProps(i).d === HOME_DISTRITOS[k]; }); if (hd.length) return hd[0]; }
+      return -1;
+    }
+    var c1 = [];
+    ns.forEach(function (n) { if (ptConcByName[n] !== undefined && c1.indexOf(ptConcByName[n]) === -1) c1.push(ptConcByName[n]); });
+    if (c1.length) { var r1 = pick(c1); return r1 >= 0 ? r1 : c1[c1.length - 1]; }
+    for (var a = 0; a < ns.length; a++) if (PLACE_ALIASES[ns[a]]) { var ai = ptConcByName[normPlace(PLACE_ALIASES[ns[a]])]; if (ai !== undefined) return ai; }
+    var fr = PTGEO.freguesias || {};
+    for (var b = 0; b < ns.length; b++) if (fr[ns[b]]) { var r3 = pick(fr[ns[b]]); if (r3 >= 0) return r3; }
+    return -1;
+  }
+  function clientConcelho(c) {
+    if (c.concelho) { var i = ptConcByName[normPlace(c.concelho)]; if (i !== undefined) return i; }
+    var r = resolveConcelho([c.city, c.zona, c.address], "");
+    if (r >= 0) return r;
+    var p = typeof clientPos === "function" ? clientPos(c) : null;
+    return p && p.prec !== "distrito" ? concelhoAt(p.lat, p.lng) : -1;
+  }
+  function leadConcelho(l) {
+    var hint = matchDistrito(l.distrito);
+    var r = resolveConcelho([guessLocalidade(l), l.localidade, l.distrito], hint);
+    if (r >= 0) return r;
+    var p = typeof leadPos === "function" ? leadPos(l) : null;
+    return p && p.prec !== "distrito" ? concelhoAt(p.lat, p.lng) : -1;
+  }
+
+  var CLI_MAP_CATS = [
+    { k: "ativo", label: "Clientes ativos", one: "Cliente ativo", color: "#16a34a", def: true },
+    { k: "cli_prospecao", label: "Clientes em prospeção", one: "Cliente em prospeção", color: "#d97706", def: true },
+    { k: "inativo", label: "Clientes inativos", one: "Cliente inativo", color: "#98a2b3", def: false },
+    { k: "conversas", label: "Empresas em conversas", one: "Prospeção · em conversas", color: "#0d9488", def: true },
+    { k: "lead_prospecao", label: "Empresas a prospetar", one: "Prospeção · a prospetar", color: "#8b5cf6", def: false }
+  ];
+  var cliMapCats = (function () {
+    var d = {}; CLI_MAP_CATS.forEach(function (c) { d[c.k] = c.def; });
+    try { var s = JSON.parse(localStorage.getItem("cc-cli-map-cats") || "null"); if (s) Object.keys(d).forEach(function (k) { if (typeof s[k] === "boolean") d[k] = s[k]; }); } catch (e) {}
+    return d;
+  })();
+  var cliMapSel = { d: "", c: -1 };
+  var cliMap = null, cliMapConcLayer = null, cliMapDistLayer = null, cliMapBadges = null;
+  var DIST_COLORS = {
+    "Viana do Castelo": "#e8c9dc", "Braga": "#f2b7a6", "Vila Real": "#d98fbf", "Bragança": "#f1c6d8", "Porto": "#dcc3e0",
+    "Aveiro": "#7fa6dc", "Viseu": "#c3cde6", "Guarda": "#e3dff0", "Coimbra": "#a9dbe0", "Castelo Branco": "#4fa3e0",
+    "Leiria": "#5aa9d6", "Santarém": "#b9e0c9", "Portalegre": "#8cc6ea", "Lisboa": "#f2a679", "Setúbal": "#c9dea0",
+    "Évora": "#4caf7d", "Beja": "#e6e39a", "Faro": "#d6d24a"
+  };
+  function cliMapCatOf(kind, x) {
+    if (kind === "cli") { var s = x.status || "ativo"; return s === "prospecao" ? "cli_prospecao" : s; }
+    if (x.estado === "conversas") return "conversas";
+    if (x.estado === "prospecao" || !x.estado) return "lead_prospecao";
+    return "";
+  }
+  function cliMapItems() {
+    var out = [];
+    state.clients.forEach(function (c) {
+      var cat = cliMapCatOf("cli", c);
+      if (!cliMapCats[cat]) return;
+      var ci = clientConcelho(c), p = concProps(ci);
+      var fora = ci < 0 && /espanha|spain|galiza|neutro/i.test(String(c.zona || "") + " " + String(c.city || ""));
+      out.push({ kind: "cli", id: c.id, name: c.name, cat: cat, ci: ci, d: p ? p.d : "", fora: fora, sub: [c.city, c.zona].filter(Boolean).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(" · ") });
+    });
+    state.leads.forEach(function (l) {
+      if ((l.mercado || "PT") !== "PT") return;
+      var cat = cliMapCatOf("lead", l);
+      if (!cat || !cliMapCats[cat]) return;
+      if (leadClientMatch(l)) return; // já aparece como cliente
+      var ci = leadConcelho(l), p = concProps(ci);
+      out.push({ kind: "lead", id: l.id, name: l.name, cat: cat, ci: ci, d: p ? p.d : matchDistrito(l.distrito), fora: false, sub: [guessLocalidade(l), l.distrito].filter(Boolean).join(" · ") });
+    });
+    return out;
+  }
+  function cliMapCatMeta(k) { return CLI_MAP_CATS.find(function (c) { return c.k === k; }) || CLI_MAP_CATS[0]; }
+  function renderCliMapShell() {
+    return '<div class="cm-bar"><span class="cm-bar-lbl">Mostrar:</span>' + CLI_MAP_CATS.map(function (c) {
+        return '<button type="button" class="cm-cat' + (cliMapCats[c.k] ? " on" : "") + '" data-cm-cat="' + c.k + '" aria-pressed="' + (cliMapCats[c.k] ? "true" : "false") + '"><i style="background:' + c.color + '"></i>' + escapeHtml(c.label) + ' <span class="fcount" id="cm-n-' + c.k + '"></span></button>';
+      }).join("") + "</div>" +
+      '<div class="cm-grid">' +
+        '<div class="panel cm-mappanel"><div class="cm-crumb" id="cm-crumb"></div><div id="cli-map" class="cm-map" aria-label="Mapa de Portugal por distritos e concelhos"><div class="empty-state">A carregar o mapa…</div></div>' +
+        '<div class="cm-foot">Clica num <b>concelho</b> para ver os clientes de lá, ou no <b>nome do distrito</b> para ver o distrito todo.</div></div>' +
+        '<div class="panel cm-side" id="cm-side"></div>' +
+      "</div>";
+  }
+  function cliMapDistStyle(f) {
+    return { color: "#3b4252", weight: cliMapSel.d && f.properties.d === cliMapSel.d ? 2.4 : 1.3, fill: false, interactive: false };
+  }
+  function cliMapConcStyle(counts) {
+    return function (f) {
+      var p = f.properties, n = counts[p.i] || 0;
+      var dim = cliMapSel.d && p.d !== cliMapSel.d;
+      var sel = cliMapSel.c === p.i;
+      var base = DIST_COLORS[p.d] || "#cbd5e1";
+      return {
+        color: sel ? "#111827" : "#ffffff", weight: sel ? 3 : 0.8, opacity: 1,
+        fillColor: sel ? shadeHex(base, -0.38) : n ? shadeHex(base, -0.22) : base,
+        fillOpacity: dim ? 0.2 : sel ? 1 : n ? 0.95 : 0.45
+      };
+    };
+  }
+  function shadeHex(hex, amt) {
+    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    function f(v) { return Math.max(0, Math.min(255, Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt))); }
+    return "#" + ((1 << 24) + (f(r) << 16) + (f(g) << 8) + f(b)).toString(16).slice(1);
+  }
+  function initCliMap() {
+    var el = document.getElementById("cli-map");
+    if (!el) return;
+    if (typeof L === "undefined") { el.innerHTML = '<div class="empty-state">Não foi possível carregar o mapa (sem ligação à internet?).</div>'; return; }
+    loadPtGeo(function (g) {
+      el = document.getElementById("cli-map");
+      if (!el) return;
+      if (!g) { el.innerHTML = '<div class="empty-state">Não foi possível carregar os limites dos concelhos. Recarrega a página.</div>'; return; }
+      el.innerHTML = "";
+      if (cliMap) { try { cliMap.remove(); } catch (e) {} cliMap = null; }
+      cliMap = L.map(el, { zoomSnap: 0.25, attributionControl: false, scrollWheelZoom: true, minZoom: 6 });
+      cliMapDistLayer = L.geoJSON(g.distritos, { style: cliMapDistStyle });
+      cliMapConcLayer = L.geoJSON(g.concelhos, {
+        onEachFeature: function (f, layer) {
+          layer.on("click", function () {
+            var p = f.properties;
+            if (cliMapSel.c === p.i) cliMapSel = { d: p.d, c: -1 };
+            else cliMapSel = { d: p.d, c: p.i };
+            drawCliMap(true);
+          });
+          layer.on("mouseover", function () { layer.setStyle({ weight: 2, color: "#111827" }); layer.bringToFront(); if (cliMapDistLayer) cliMapDistLayer.bringToFront(); });
+          layer.on("mouseout", function () { if (cliMapConcLayer) cliMapConcLayer.resetStyle(layer); });
+          layer.bindTooltip(escapeHtml(f.properties.c), { sticky: true, direction: "top", className: "cm-tip" });
+        }
+      }).addTo(cliMap);
+      cliMapDistLayer.addTo(cliMap);
+      cliMapBadges = L.layerGroup().addTo(cliMap);
+      cliMap.on("zoomend", function () { drawCliBadges(); });
+      drawCliMap(true);
+    });
+  }
+  var cliMapLastItems = [];
+  function drawCliMap(fit) {
+    if (!PTGEO) return;
+    var items = cliMapItems();
+    cliMapLastItems = items;
+    var counts = {};
+    items.forEach(function (it) { if (it.ci >= 0) counts[it.ci] = (counts[it.ci] || 0) + 1; });
+    CLI_MAP_CATS.forEach(function (c) {
+      var el = document.getElementById("cm-n-" + c.k);
+      if (el) el.textContent = cliMapCats[c.k] ? items.filter(function (it) { return it.cat === c.k; }).length : "";
+    });
+    if (cliMap && cliMapConcLayer) {
+      cliMapConcLayer.setStyle(cliMapConcStyle(counts));
+      cliMapConcLayer.eachLayer(function (ly) { if (ly.feature && ly.feature.properties.i === cliMapSel.c) ly.bringToFront(); });
+      cliMapDistLayer.setStyle(cliMapDistStyle);
+      cliMapDistLayer.bringToFront();
+      if (fit) {
+        var b = null;
+        if (cliMapSel.d) {
+          cliMapDistLayer.eachLayer(function (ly) { if (ly.feature.properties.d === cliMapSel.d) b = ly.getBounds(); });
+        }
+        if (b) cliMap.fitBounds(b, { padding: [24, 24] });
+        else cliMap.fitBounds([[36.95, -9.55], [42.16, -6.18]], { padding: [10, 10] });
+      }
+      drawCliBadges();
+    }
+    renderCliCrumb();
+    renderCliSide(items);
+  }
+  function drawCliBadges() {
+    if (!cliMap || !cliMapBadges || !PTGEO) return;
+    cliMapBadges.clearLayers();
+    var items = cliMapLastItems;
+    var z = cliMap.getZoom();
+    var showConc = z >= 8 || !!cliMapSel.d;
+    if (!showConc) {
+      var byD = {};
+      items.forEach(function (it) { if (it.d) byD[it.d] = (byD[it.d] || 0) + 1; });
+      PTGEO.distritos.features.forEach(function (f) {
+        var p = f.properties, n = byD[p.d] || 0;
+        var m = L.marker(p.p, { icon: L.divIcon({ className: "cm-dlabel", html: '<span class="nm">' + escapeHtml(p.d) + "</span>" + (n ? '<span class="n">' + n + "</span>" : ""), iconSize: null }), keyboard: true, title: "Ver o distrito de " + p.d });
+        m.on("click", function () { cliMapSel = { d: p.d, c: -1 }; drawCliMap(true); });
+        m.addTo(cliMapBadges);
+      });
+      return;
+    }
+    var byC = {};
+    items.forEach(function (it) { if (it.ci >= 0) byC[it.ci] = (byC[it.ci] || 0) + 1; });
+    PTGEO.concelhos.features.forEach(function (f) {
+      var p = f.properties, n = byC[p.i] || 0;
+      if (cliMapSel.d && p.d !== cliMapSel.d) return;
+      if (!n && !(cliMapSel.d && z >= 8.5)) return;
+      var m = L.marker(p.p, { icon: L.divIcon({ className: "cm-clabel" + (n ? "" : " zero") + (cliMapSel.c === p.i ? " sel" : ""), html: (z >= 8.5 ? '<span class="nm">' + escapeHtml(p.c) + "</span>" : "") + (n ? '<span class="n">' + n + "</span>" : ""), iconSize: null }), title: p.c });
+      m.on("click", function () { cliMapSel = cliMapSel.c === p.i ? { d: p.d, c: -1 } : { d: p.d, c: p.i }; drawCliMap(cliMapSel.c < 0); });
+      m.addTo(cliMapBadges);
+    });
+    if (cliMapSel.d) {
+      PTGEO.distritos.features.forEach(function (f) {
+        if (f.properties.d === cliMapSel.d) return;
+        var p = f.properties;
+        var m = L.marker(p.p, { icon: L.divIcon({ className: "cm-dlabel small", html: '<span class="nm">' + escapeHtml(p.d) + "</span>", iconSize: null }), title: "Ver o distrito de " + p.d });
+        m.on("click", function () { cliMapSel = { d: p.d, c: -1 }; drawCliMap(true); });
+        m.addTo(cliMapBadges);
+      });
+    }
+  }
+  function renderCliCrumb() {
+    var el = document.getElementById("cm-crumb");
+    if (!el) return;
+    var p = concProps(cliMapSel.c);
+    var h = '<button type="button" class="cm-cr" data-cm-go="pt">Portugal</button>';
+    if (cliMapSel.d) h += '<span class="sep">›</span><button type="button" class="cm-cr" data-cm-go="d">Distrito de ' + escapeHtml(cliMapSel.d) + "</button>";
+    if (p) h += '<span class="sep">›</span><span class="cm-cr cur">' + escapeHtml(p.c) + "</span>";
+    el.innerHTML = h;
+    el.querySelectorAll("[data-cm-go]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        cliMapSel = b.getAttribute("data-cm-go") === "pt" ? { d: "", c: -1 } : { d: cliMapSel.d, c: -1 };
+        drawCliMap(true);
+      });
+    });
+  }
+  function cliMapRow(it) {
+    var m = cliMapCatMeta(it.cat);
+    return '<button type="button" class="cm-row" data-cm-open="' + it.kind + ":" + escapeHtml(it.id) + '">' +
+      '<i style="background:' + m.color + '"></i><span class="cm-row-t"><span class="cm-row-n">' + escapeHtml(it.name) + "</span>" +
+      '<span class="cm-row-s">' + escapeHtml(m.one) + (it.sub ? " · " + escapeHtml(it.sub) : "") + "</span></span></button>";
+  }
+  function cliMapSummary(list) {
+    var by = countBy(list, function (it) { return it.cat; });
+    return CLI_MAP_CATS.filter(function (c) { return by[c.k]; }).map(function (c) {
+      return '<span class="cm-sum"><i style="background:' + c.color + '"></i>' + by[c.k] + " " + escapeHtml(c.label.toLowerCase()) + "</span>";
+    }).join("");
+  }
+  function renderCliSide(items) {
+    var el = document.getElementById("cm-side");
+    if (!el) return;
+    var byName = function (a, b) { return String(a.name).localeCompare(String(b.name), "pt"); };
+    var h = "";
+    var p = concProps(cliMapSel.c);
+    if (p) {
+      var list = items.filter(function (it) { return it.ci === p.i; }).sort(byName);
+      h += '<div class="cm-side-h"><h2>' + escapeHtml(p.c) + '</h2><div class="sub">Concelho · distrito de ' + escapeHtml(p.d) + " · <b>" + list.length + "</b> " + (list.length === 1 ? "empresa" : "empresas") + "</div>" + cliMapSummary(list) + "</div>";
+      h += list.length ? '<div class="cm-list">' + list.map(cliMapRow).join("") + "</div>" : '<div class="empty-state">Nenhum cliente neste concelho com os filtros escolhidos.</div>';
+    } else if (cliMapSel.d) {
+      var dl = items.filter(function (it) { return it.d === cliMapSel.d; });
+      h += '<div class="cm-side-h"><h2>Distrito de ' + escapeHtml(cliMapSel.d) + '</h2><div class="sub"><b>' + dl.length + "</b> " + (dl.length === 1 ? "empresa" : "empresas") + "</div>" + cliMapSummary(dl) + "</div>";
+      var groups = {};
+      dl.forEach(function (it) { var k = it.ci >= 0 ? concProps(it.ci).c : ""; (groups[k] = groups[k] || []).push(it); });
+      var keys = Object.keys(groups).filter(Boolean).sort(function (a, b) { return groups[b].length - groups[a].length || a.localeCompare(b, "pt"); });
+      if (groups[""]) keys.push("");
+      h += keys.length ? keys.map(function (k) {
+        var g = groups[k].sort(byName);
+        var ci = k ? ptConcByName[normPlace(k)] : -1;
+        return '<div class="cm-grp"><div class="cm-grp-h">' + (k ? '<button type="button" class="cm-grp-btn" data-cm-conc="' + ci + '">' + escapeHtml(k) + "</button>" : '<span class="muted">Concelho por identificar</span>') + ' <span class="fcount">' + g.length + "</span></div>" +
+          g.map(cliMapRow).join("") + "</div>";
+      }).join("") : '<div class="empty-state">Nenhuma empresa neste distrito com os filtros escolhidos.</div>';
+    } else {
+      var byD = {};
+      items.forEach(function (it) { if (it.d) byD[it.d] = (byD[it.d] || 0) + 1; });
+      var ds = Object.keys(byD).sort(function (a, b) { return byD[b] - byD[a] || a.localeCompare(b, "pt"); });
+      h += '<div class="cm-side-h"><h2>Portugal</h2><div class="sub"><b>' + items.length + "</b> empresas no total</div>" + cliMapSummary(items) + "</div>";
+      h += '<div class="cm-grp"><div class="cm-grp-h">Por distrito</div>' + (ds.length ? ds.map(function (d) {
+        return '<button type="button" class="cm-row cm-drow" data-cm-dist="' + escapeHtml(d) + '"><i style="background:' + (DIST_COLORS[d] || "#cbd5e1") + '"></i><span class="cm-row-t"><span class="cm-row-n">' + escapeHtml(d) + '</span></span><span class="fcount">' + byD[d] + "</span></button>";
+      }).join("") : '<div class="muted" style="padding:8px 2px">Nenhuma empresa com os filtros escolhidos.</div>') + "</div>";
+    }
+    var semLoc = items.filter(function (it) { return !it.d && !it.fora && (!cliMapSel.d); });
+    var fora = items.filter(function (it) { return it.fora && !cliMapSel.d; });
+    if (semLoc.length) h += '<div class="cm-grp"><div class="cm-grp-h"><span class="muted">Sem concelho identificado</span> <span class="fcount">' + semLoc.length + '</span></div><div class="cm-hint">Abre a ficha e escolhe o <b>Concelho</b> para aparecerem no mapa.</div>' + semLoc.sort(byName).map(cliMapRow).join("") + "</div>";
+    if (fora.length) h += '<div class="cm-grp"><div class="cm-grp-h"><span class="muted">Fora de Portugal / sem zona</span> <span class="fcount">' + fora.length + "</span></div>" + fora.sort(byName).map(cliMapRow).join("") + "</div>";
+    el.innerHTML = h;
+    el.querySelectorAll("[data-cm-open]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var v = b.getAttribute("data-cm-open"), kind = v.slice(0, v.indexOf(":")), id = v.slice(v.indexOf(":") + 1);
+        if (kind === "cli") navigate("/clientes/" + encodeURIComponent(id)); else openLeadForm(id);
+      });
+    });
+    el.querySelectorAll("[data-cm-dist]").forEach(function (b) {
+      b.addEventListener("click", function () { cliMapSel = { d: b.getAttribute("data-cm-dist"), c: -1 }; drawCliMap(true); });
+    });
+    el.querySelectorAll("[data-cm-conc]").forEach(function (b) {
+      b.addEventListener("click", function () { var i = parseInt(b.getAttribute("data-cm-conc"), 10); var cp = concProps(i); if (cp) { cliMapSel = { d: cp.d, c: i }; drawCliMap(false); } });
+    });
+  }
+  function bindCliMap(content) {
+    content.querySelectorAll("[data-cli-view]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        cliView = el.getAttribute("data-cli-view");
+        try { localStorage.setItem("cc-cli-view", cliView); } catch (e) {}
+        render();
+      });
+    });
+    content.querySelectorAll("[data-cm-cat]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var k = el.getAttribute("data-cm-cat");
+        cliMapCats[k] = !cliMapCats[k];
+        try { localStorage.setItem("cc-cli-map-cats", JSON.stringify(cliMapCats)); } catch (e) {}
+        el.classList.toggle("on", cliMapCats[k]); el.setAttribute("aria-pressed", cliMapCats[k] ? "true" : "false");
+        drawCliMap(false);
+      });
+    });
+    if (document.getElementById("cli-map")) initCliMap();
+    else if (cliMap) { try { cliMap.remove(); } catch (e) {} cliMap = null; }
+  }
+  // Opções do campo "Concelho" na ficha do cliente, agrupadas por distrito.
+  function concelhoSelectHtml(c) {
+    if (!PTGEO) return "";
+    var cur = c && c.concelho ? c.concelho : "";
+    var auto = -1;
+    if (c) { var tmp = {}; for (var k in c) tmp[k] = c[k]; tmp.concelho = ""; auto = clientConcelho(tmp); }
+    var byD = {};
+    PTGEO.concelhos.features.forEach(function (f) { (byD[f.properties.d] = byD[f.properties.d] || []).push(f.properties.c); });
+    var opts = '<option value="">' + (auto >= 0 ? "Automático — " + escapeHtml(concProps(auto).c) : "— Por identificar —") + "</option>" +
+      Object.keys(byD).sort(function (a, b) { return a.localeCompare(b, "pt"); }).map(function (d) {
+        return '<optgroup label="' + escapeHtml(d) + '">' + byD[d].sort(function (a, b) { return a.localeCompare(b, "pt"); }).map(function (n) {
+          return '<option value="' + escapeHtml(n) + '"' + (n === cur ? " selected" : "") + ">" + escapeHtml(n) + "</option>";
+        }).join("") + "</optgroup>";
+      }).join("");
+    return field("Concelho (para o mapa)", '<select class="input" id="f-concelho">' + opts + "</select>");
   }
 
   /* ============ Prospeção de mercado (2026-10-27) ============ */
@@ -2978,6 +3445,7 @@
           field("Zona", '<input class="input" id="f-zona" list="dl-zonas" value="' + escapeHtml(c ? c.zona : "") + '">' + datalistHtml("dl-zonas", KNOWN_ZONAS)) +
           field("Volta", '<input class="input" id="f-volta" placeholder="Ex.: 1, 2…" value="' + escapeHtml(c ? c.volta : "") + '">') +
         "</div>" +
+        concelhoSelectHtml(c) +
         field("Visitas/mês", '<input class="input" type="number" min="0" step="1" id="f-visitfreq" placeholder="Ex.: 1" value="' + (c && c.visitFreq ? c.visitFreq : "") + '">') +
         '<div class="field-row">' +
           field("Estado", '<select class="input" id="f-status">' + selectOptions(CLIENT_STATUS, c ? c.status : "ativo") + "</select>") +
@@ -3087,6 +3555,7 @@
     c.visitFreq = parseInt(val("f-visitfreq"), 10) || 0;
     c.status = val("f-status"); c.comercial = val("f-comercial"); c.plafond = parseFloat(val("f-plafond")) || 0;
     c.postalCode = val("f-postal"); c.address = val("f-address"); c.city = val("f-city"); c.notes = val("f-notes");
+    if (document.getElementById("f-concelho")) c.concelho = val("f-concelho");
     scheduleSave(); render();
     if (!id) navigate("/clientes/" + encodeURIComponent(c.id));
     toast(id ? "Cliente atualizado." : "Cliente criado.");
@@ -3481,6 +3950,7 @@
         render();
       });
     });
+    bindCliMap(content);
     if (document.getElementById("lead-map")) initLeadMap();
     else if (leadMap) { try { leadMap.remove(); } catch (e3) {} leadMap = null; }
     content.querySelectorAll("[data-lead-mercado]").forEach(function (el) {

@@ -65,6 +65,16 @@ function requireAuth(req, res, next) {
 }
 
 /* ---------- routes ---------- */
+// Limites oficiais dos distritos e concelhos (CAOP, simplificados) para o
+// mapa dos clientes — ficheiro já comprimido (2026-10-30).
+const PT_MAPA_GZ = path.join(__dirname, "pt_mapa.json.gz");
+app.get("/pt_mapa.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Content-Encoding", "gzip");
+  res.setHeader("Cache-Control", "public, max-age=604800");
+  res.sendFile(PT_MAPA_GZ);
+});
+
 app.get("/healthz", (req, res) => res.status(200).send("ok"));
 
 app.get("/", (req, res) => {
