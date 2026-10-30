@@ -538,6 +538,15 @@
   .modal-head h2 { font-size: 18px; }
   .modal-body { padding: 20px; max-height: 64vh; overflow-y: auto; }
   .modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--sand); }
+  .due-count { font-size: 13px; color: var(--ink-muted); }
+  .due-info { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; margin-bottom: 14px; }
+  .due-info dt { color: var(--ink-muted); }
+  .due-info dd { margin: 0; font-weight: 500; }
+  .due-desc { font-size: 13px; color: var(--ink-muted); margin: 0 0 14px; white-space: pre-wrap; max-height: 90px; overflow: auto; }
+  .due-date-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .due-date-row input { font-size: 18px; font-weight: 600; padding: 8px 10px; }
+  .due-quick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .due-hint { font-size: 13px; color: var(--ink-muted); margin-top: 8px; }
   .icon-btn {
     border: none; background: none; color: var(--ink-muted); cursor: pointer; font-size: 16px;
     width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center;
@@ -703,6 +712,17 @@
   <div class="modal-foot" id="form-dialog-foot"></div>
 </dialog>
 
+<dialog id="due-dialog">
+  <div class="modal-head">
+    <h2>Validar prazo de entrega</h2>
+    <span class="due-count" id="due-count"></span>
+  </div>
+  <div class="modal-body" id="due-body"></div>
+  <div class="modal-foot">
+    <button class="btn" id="due-skip-btn">Manter sugestão</button>
+    <button class="btn btn-primary" id="due-ok-btn">Confirmar prazo</button>
+  </div>
+</dialog>
 <dialog id="confirm-dialog">
   <div class="modal-head">
     <h2 id="confirm-title">Confirmar</h2>
@@ -3071,6 +3091,67 @@
     if (!id) navigate("/clientes/" + encodeURIComponent(c.id));
     toast(id ? "Cliente atualizado." : "Cliente criado.");
   }
+  /* ---- Validar prazo de entrega (pedido do utilizador de 2026-10-30: "ao pôr a
+     encomenda abrir um pop-up para validar o prazo de entrega" — em todas as
+     encomendas novas, manuais ou lidas de PDF). Mostra a data sugerida pelo
+     prazo do material; confirma-se tal como está ou muda-se. ---- */
+  var dueQueue = [], dueDialog = null;
+  function askDueDate(orderIds) {
+    orderIds.forEach(function (id) { if (dueQueue.indexOf(id) === -1) dueQueue.push(id); });
+    if (dueDialog && !dueDialog.open) showNextDue();
+  }
+  function fmtDueLong(iso) {
+    if (!iso) return "";
+    var d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" });
+  }
+  function showNextDue() {
+    var o = null;
+    while (dueQueue.length && !o) o = state.orders.find(function (x) { return x.id === dueQueue[0]; }) || (dueQueue.shift(), null);
+    if (!o) return;
+    var c = clientById(o.clientId);
+    var days = leadDaysForMaterial(o.materialType);
+    var suggested = computeDueDate(o.date, o.materialType);
+    document.getElementById("due-count").textContent = dueQueue.length > 1 ? "1 de " + dueQueue.length : "";
+    var quick = [3, 5, 7, 10, 15, 20].map(function (n) {
+      return '<button type="button" class="btn btn-sm" data-due-days="' + n + '">' + n + ' dias úteis</button>';
+    }).join("");
+    document.getElementById("due-body").innerHTML =
+      '<dl class="due-info">' +
+        "<dt>Encomenda</dt><dd>" + escapeHtml(o.documentNumber || "—") + "</dd>" +
+        "<dt>Cliente</dt><dd>" + escapeHtml(c ? c.name : "—") + "</dd>" +
+        "<dt>Material</dt><dd>" + escapeHtml(o.materialType || "—") + (days !== null ? ' <span class="due-count">(prazo normal: ' + days + " dias úteis)</span>" : "") + "</dd>" +
+        "<dt>Data</dt><dd>" + fmtDate(o.date) + "</dd>" +
+      "</dl>" +
+      (o.description ? '<p class="due-desc">' + escapeHtml(o.description) + "</p>" : "") +
+      '<label class="field-label" for="due-input"><b>Entrega prevista</b></label>' +
+      '<div class="due-date-row"><input class="input" type="date" id="due-input" value="' + escapeHtml(o.dueDate || suggested || "") + '"></div>' +
+      '<div class="due-hint" id="due-hint"></div>' +
+      '<div class="due-quick">' + quick + "</div>";
+    var input = document.getElementById("due-input");
+    var hint = function () { document.getElementById("due-hint").textContent = input.value ? fmtDueLong(input.value) + (input.value === suggested ? " — sugestão pelo prazo do material" : "") : "Sem data"; };
+    input.addEventListener("input", hint);
+    hint();
+    document.querySelectorAll("[data-due-days]").forEach(function (b) {
+      b.addEventListener("click", function () { input.value = addBusinessDays(o.date || todayISO(), parseInt(b.getAttribute("data-due-days"), 10)); hint(); });
+    });
+    dueDialog.showModal();
+    setTimeout(function () { input.focus(); }, 30);
+  }
+  function finishDue(useInput) {
+    var id = dueQueue.shift();
+    var o = state.orders.find(function (x) { return x.id === id; });
+    if (o) {
+      if (useInput) o.dueDate = val("due-input") || o.dueDate;
+      o.dueConfirmed = true;
+      scheduleSave();
+    }
+    dueDialog.close();
+    render();
+    if (dueQueue.length) setTimeout(showNextDue, 60);
+    else if (useInput) toast("Prazo de entrega confirmado.");
+  }
+
   function saveOrder(id) {
     var clientId = val("f-client"), desc = val("f-desc");
     if (!clientId) { toast("Escolha um cliente.", "error"); return false; }
@@ -3083,6 +3164,7 @@
     o.dueDate = val("f-due") || computeDueDate(o.date, o.materialType);
     scheduleSave(); render();
     toast(id ? "Encomenda atualizada." : "Encomenda criada.");
+    if (!id) { var newId = o.id; setTimeout(function () { askDueDate([newId]); }, 120); }
   }
   function saveQuote(id) {
     var clientId = val("f-client"), desc = val("f-desc");
@@ -4049,7 +4131,7 @@
         var ok = kind === "encomenda" ? pushOrderRecord(recordFields, client.id) : pushQuoteRecord(recordFields, client.id);
         if (ok === "duplicate") return { file: file.name, duplicate: true, docNumber: fields.number };
         if (ok !== "created") return { file: file.name, error: "não foi possível ler os dados do documento" };
-        return { file: file.name, ok: true };
+        return { file: file.name, ok: true, orderId: kind === "encomenda" ? state.orders[state.orders.length - 1].id : null };
       }).catch(function (e) {
         return { file: file.name, error: "erro a ler o PDF (" + (e && e.message ? e.message : e) + ")" };
       });
@@ -4068,6 +4150,11 @@
       }
       statusEl.textContent = summary;
       toast(imported ? imported + " documento(s) importado(s)." : "Nenhum documento novo importado.");
+      var newOrders = results.filter(function (r) { return r.ok && r.orderId; }).map(function (r) { return r.orderId; });
+      if (newOrders.length) {
+        if (importDialog && importDialog.open) importDialog.close();
+        setTimeout(function () { askDueDate(newOrders); }, 150);
+      }
     });
   }
   function doExportJson() {
@@ -4089,6 +4176,10 @@
   document.addEventListener("DOMContentLoaded", function () {
     formDialog = document.getElementById("form-dialog");
     confirmDialog = document.getElementById("confirm-dialog");
+    dueDialog = document.getElementById("due-dialog");
+    document.getElementById("due-ok-btn").addEventListener("click", function () { finishDue(true); });
+    document.getElementById("due-skip-btn").addEventListener("click", function () { finishDue(false); });
+    dueDialog.addEventListener("cancel", function (e) { e.preventDefault(); finishDue(false); });
     exportDialog = document.getElementById("export-dialog");
     importDialog = document.getElementById("import-dialog");
     var importRunBtn = document.getElementById("import-run-btn");
