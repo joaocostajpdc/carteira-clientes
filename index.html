@@ -2392,6 +2392,13 @@
     return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
       .replace(/\b(lda|limitada|unipessoal|s\.?a|s\.?l|serralharia|caixilharias?|aluminios?)\b/g, "").replace(/[^a-z0-9]/g, "");
   }
+  function leadCampanhasList(l) {
+    if (!l || !l.campanhas) return [];
+    // Formato novo: array de {nome, data}
+    if (Array.isArray(l.campanhas)) return l.campanhas;
+    // Formato antigo: string "Enviadas" / "Não enviar" — ignora (não converte)
+    return [];
+  }
   function leadClientMatch(l) {
     if (l.clientId && clientById(l.clientId)) return clientById(l.clientId);
     var nif = String(l.nif || "").replace(/\D/g, "");
@@ -2467,9 +2474,11 @@
       var cli = leadClientMatch(l);
       var tel = l.phone ? '<a class="tel" href="tel:' + escapeHtml(String(l.phone).replace(/\s+/g, "")) + '" data-stop>' + escapeHtml(l.phone) + "</a>" : "";
       var mail = l.email ? '<a class="tel" href="mailto:' + escapeHtml(l.email) + '" data-stop>' + escapeHtml(l.email) + "</a>" : "";
+      var camps = leadCampanhasList(l);
+      var campChip = camps.length ? ' <span class="chip chip-neutral" title="' + camps.map(function(c){return escapeHtml(c.nome)+' ('+escapeHtml(c.data)+')';}).join('; ') + '" style="font-size:11px;padding:1px 5px;">📧 ' + camps.length + (camps.length === 1 ? " campanha" : " campanhas") + "</span>" : "";
       return '<tr class="clickable" data-lead-open="' + l.id + '">' +
         '<td><div class="cell-main">' + escapeHtml(l.name) +
-          (cli ? ' <a class="chip chip-success lead-cli" href="#/clientes/' + encodeURIComponent(cli.id) + '" data-stop title="Já está na carteira de clientes">na carteira</a>' : "") + "</div>" +
+          (cli ? ' <a class="chip chip-success lead-cli" href="#/clientes/' + encodeURIComponent(cli.id) + '" data-stop title="Já está na carteira de clientes">na carteira</a>' : "") + campChip + "</div>" +
           '<div class="cell-sub">' + [l.nif ? "NIF " + escapeHtml(l.nif) : "", l.notes ? escapeHtml(l.notes.length > 70 ? l.notes.slice(0, 70) + "…" : l.notes) : ""].filter(Boolean).join(" · ") + "</div></td>" +
         "<td>" + (l.distrito ? escapeHtml(l.distrito) : '<span class="muted">—</span>') + "</td>" +
         '<td><div class="cell-main">' + (tel || '<span class="muted">—</span>') + '</div><div class="cell-sub">' + mail + "</div></td>" +
@@ -2718,7 +2727,27 @@
       "</div>" +
       '<div class="field-row">' +
         field("Email de apresentação enviado em", '<input class="input" type="date" id="f-apres" value="' + escapeHtml(l ? l.emailApresentacao || "" : "") + '">') +
-        field("Campanhas", '<select class="input" id="f-campanhas">' + ["", "Enviadas", "Não enviar"].map(function (o) { var cur = l ? String(l.campanhas || "").toLowerCase() : ""; return '<option value="' + o + '"' + (cur === o.toLowerCase() ? " selected" : "") + ">" + (o || "—") + "</option>"; }).join("") + "</select>") +
+        field("Campanhas enviadas", (function() {
+          var camps = leadCampanhasList(l);
+          var html = '<div id="f-campanhas-wrap" style="display:flex;flex-direction:column;gap:4px;">';
+          if (camps.length) {
+            html += camps.map(function(c, i) {
+              return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;">' +
+                '<span class="chip chip-neutral" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escapeHtml(c.nome) + ' — ' + escapeHtml(c.data) + '">' + escapeHtml(c.nome) + ' <span class="muted">(' + escapeHtml(c.data) + ')</span></span>' +
+                '<button type="button" class="btn btn-sm btn-ghost" data-camp-del="' + i + '" data-stop style="padding:1px 6px;font-size:11px;" title="Remover">✕</button>' +
+              '</div>';
+            }).join('');
+          } else {
+            html += '<div class="muted" id="f-no-camps" style="font-size:13px;">Nenhuma campanha registada.</div>';
+          }
+          html += '<div style="display:flex;gap:4px;margin-top:2px;">' +
+            '<input class="input" id="f-camp-nome" placeholder="Nome da campanha" style="flex:1;font-size:12px;padding:4px 6px;">' +
+            '<input class="input" type="date" id="f-camp-data" value="' + todayISO() + '" style="width:130px;font-size:12px;padding:4px 6px;">' +
+            '<button type="button" class="btn btn-sm" id="f-camp-add" data-stop style="padding:4px 10px;font-size:12px;">+ Adicionar</button>' +
+          '</div>' +
+          '</div>';
+          return html;
+        })()) +
       "</div>" +
       '<div class="field-row lead-checks">' +
         '<label><input type="checkbox" id="f-newsletter"' + (l && l.newsletter ? " checked" : "") + "> Inscrito na newsletter</label>" +
@@ -2740,9 +2769,48 @@
     document.getElementById("form-dialog-body").innerHTML = body;
     document.getElementById("form-dialog-foot").innerHTML = foot;
     formDialog.showModal();
+    // --- Gestão de campanhas inline ---
+    var _pendingCamps = leadCampanhasList(l).slice(); // cópia local
+    function _renderCamps() {
+      var wrap = document.getElementById("f-campanhas-wrap");
+      if (!wrap) return;
+      var items = _pendingCamps.map(function(c, i) {
+        return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;">' +
+          '<span class="chip chip-neutral" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escapeHtml(c.nome) + ' — ' + escapeHtml(c.data) + '">' + escapeHtml(c.nome) + ' <span class="muted">(' + escapeHtml(c.data) + ')</span></span>' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-camp-del="' + i + '" data-stop style="padding:1px 6px;font-size:11px;" title="Remover">✕</button>' +
+        '</div>';
+      }).join('');
+      var noMsg = _pendingCamps.length ? '' : '<div class="muted" style="font-size:13px;">Nenhuma campanha registada.</div>';
+      var addRow = '<div style="display:flex;gap:4px;margin-top:2px;">' +
+        '<input class="input" id="f-camp-nome" placeholder="Nome da campanha" style="flex:1;font-size:12px;padding:4px 6px;">' +
+        '<input class="input" type="date" id="f-camp-data" value="' + todayISO() + '" style="width:130px;font-size:12px;padding:4px 6px;">' +
+        '<button type="button" class="btn btn-sm" id="f-camp-add" data-stop style="padding:4px 10px;font-size:12px;">+ Adicionar</button>' +
+      '</div>';
+      wrap.innerHTML = items + noMsg + addRow;
+      _bindCampHandlers();
+    }
+    function _bindCampHandlers() {
+      var addBtn = document.getElementById("f-camp-add");
+      if (addBtn) addBtn.addEventListener("click", function(e) {
+        e.preventDefault(); e.stopPropagation();
+        var nome = (document.getElementById("f-camp-nome").value || "").trim();
+        var data = document.getElementById("f-camp-data").value || todayISO();
+        if (!nome) { toast("Indique o nome da campanha.", "error"); return; }
+        _pendingCamps.push({ nome: nome, data: data });
+        _renderCamps();
+      });
+      document.querySelectorAll("[data-camp-del]").forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+          e.preventDefault(); e.stopPropagation();
+          _pendingCamps.splice(parseInt(this.getAttribute("data-camp-del")), 1);
+          _renderCamps();
+        });
+      });
+    }
+    _bindCampHandlers();
     document.getElementById("form-save-btn").addEventListener("click", function (e) {
       e.preventDefault();
-      if (saveLead(id) !== false) formDialog.close();
+      if (saveLead(id, _pendingCamps) !== false) formDialog.close();
     });
     var delBtn = document.getElementById("lead-del-btn");
     if (delBtn) delBtn.addEventListener("click", function (e) {
@@ -2766,7 +2834,7 @@
     });
     setTimeout(function () { var el = document.getElementById("f-name"); if (el && !l) el.focus(); }, 30);
   }
-  function saveLead(id) {
+  function saveLead(id, campanhas) {
     var name = val("f-name");
     if (!name) { toast("Indique o nome da empresa.", "error"); return false; }
     var l = id ? leadById(id) : null;
@@ -2774,7 +2842,8 @@
     l.name = name; l.nif = val("f-nif"); l.mercado = val("f-mercado") || "PT"; l.email = val("f-email"); l.phone = val("f-phone");
     var locAntes = guessLocalidade(l) + "|" + (l.distrito || "");
     l.distrito = val("f-distrito"); l.localidade = val("f-localidade");
-    if (l.posManual && locAntes !== guessLocalidade(l) + "|" + (l.distrito || "")) delete l.posManual; l.estado = val("f-status") || "prospecao"; l.emailApresentacao = val("f-apres"); l.campanhas = val("f-campanhas");
+    if (l.posManual && locAntes !== guessLocalidade(l) + "|" + (l.distrito || "")) delete l.posManual; l.estado = val("f-status") || "prospecao"; l.emailApresentacao = val("f-apres");
+    if (Array.isArray(campanhas)) l.campanhas = campanhas;
     l.newsletter = !!document.getElementById("f-newsletter").checked; l.whatsapp = !!document.getElementById("f-whatsapp").checked;
     l.notes = val("f-notes"); l.updatedAt = new Date().toISOString();
     scheduleSave(); render();
@@ -2805,7 +2874,15 @@
       l.contactos.push(c);
       l.estado = val("f-status") || l.estado;
       if (apres.checked) { l.emailApresentacao = c.date; }
-      if (c.tipo === "Newsletter / campanha") l.campanhas = "Enviadas";
+      if (c.tipo === "Newsletter / campanha") {
+        var campNome = (c.texto || "").trim() || "Campanha";
+        var campData = c.date || todayISO();
+        var existentes = leadCampanhasList(l);
+        if (!existentes.some(function(x) { return x.nome === campNome && x.data === campData; })) {
+          existentes.push({ nome: campNome, data: campData });
+        }
+        l.campanhas = existentes;
+      }
       l.updatedAt = new Date().toISOString();
       var agendar = document.getElementById("f-visita").checked;
       formDialog.close();
@@ -4165,7 +4242,7 @@
       ll.forEach(function (l) {
         var last = leadLastContact(l);
         rows.push([l.name, l.nif || "", LEAD_MERCADOS[l.mercado] || l.mercado || "", l.distrito || "", l.email || "", l.phone || "", statusMeta(LEAD_STATUS, l.estado).label,
-          l.emailApresentacao || "", l.campanhas || "", l.newsletter ? "Inscrito" : "", l.whatsapp ? "Inscrito" : "", last ? last.date : "", (l.contactos || []).length, l.notes || ""]);
+          l.emailApresentacao || "", leadCampanhasList(l).map(function(c){return c.nome+" ("+c.data+")";}).join("; ") || (typeof l.campanhas === "string" ? l.campanhas : ""), l.newsletter ? "Inscrito" : "", l.whatsapp ? "Inscrito" : "", last ? last.date : "", (l.contactos || []).length, l.notes || ""]);
       });
       n = ll.length; name = "prospecao";
     } else {

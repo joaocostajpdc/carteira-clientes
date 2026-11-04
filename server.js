@@ -154,6 +154,39 @@ app.get("/api/files/:id", requireAuth, async (req, res) => {
 
 // Erros vistos na página (falhas a gravar, erros de JavaScript) — ficam nos
 // registos do servidor para se poder diagnosticar à distância.
+// Endpoint de migração único: marca campanha em leads por lista de emails
+// Chamar via: POST /api/migrate-campanhas com body { secret, emails: [...], campanha: {nome, data} }
+app.post("/api/migrate-campanhas", express.json({ limit: "512kb" }), async (req, res) => {
+  const { secret, emails, campanha } = req.body || {};
+  if (!secret || secret !== (process.env.MIGRATE_SECRET || "")) {
+    return res.status(403).json({ error: "forbidden" });
+  }
+  if (!Array.isArray(emails) || !campanha || !campanha.nome || !campanha.data) {
+    return res.status(400).json({ error: "invalid_body" });
+  }
+  try {
+    const emailSet = new Set(emails.map(e => String(e).trim().toLowerCase()));
+    const { rows } = await pool.query("SELECT data FROM app_state WHERE id = 1");
+    if (!rows.length) return res.status(404).json({ error: "no_state" });
+    const state = rows[0].data;
+    const leads = Array.isArray(state.leads) ? state.leads : [];
+    let updated = 0;
+    leads.forEach(l => {
+      const email = String(l.email || "").trim().toLowerCase();
+      if (!email || !emailSet.has(email)) return;
+      let camps = Array.isArray(l.campanhas) ? l.campanhas : [];
+      const already = camps.some(c => c.nome === campanha.nome && c.data === campanha.data);
+      if (!already) { camps.push({ nome: campanha.nome, data: campanha.data }); l.campanhas = camps; updated++; }
+    });
+    state.leads = leads;
+    await pool.query("UPDATE app_state SET data = $1, updated_at = now() WHERE id = 1", [JSON.stringify(state)]);
+    res.json({ ok: true, updated, total: leads.length });
+  } catch (err) {
+    console.error("migrate-campanhas failed", err);
+    res.status(500).json({ error: "server_error" });
+  }
+});
+
 app.post("/api/client-log", express.json({ limit: "20kb" }), (req, res) => {
   const b = req.body || {};
   const msg = String(b.msg || "").slice(0, 2000);
