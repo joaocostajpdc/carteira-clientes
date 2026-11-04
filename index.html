@@ -1295,6 +1295,7 @@
     { page: "encomendas", label: "Encomendas", ic: navIcon('<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>') },
     { page: "orcamentos", label: "Orçamentos", ic: navIcon('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>') },
     { page: "prospecao", label: "Prospeção", ic: navIcon('<circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5l-4.8-4.8M11 8v6M8 11h6"/>') },
+    { page: "campanhas", label: "Campanhas", ic: navIcon('<path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>') },
     { page: "visitas", label: "Visitas", ic: navIcon('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'), section: "Rotas" },
     { page: "voltas", label: "Voltas", ic: navIcon('<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8a3.5 3.5 0 0 0 0-7H8a3.5 3.5 0 0 1 0-7h8"/>') }
   ];
@@ -1349,6 +1350,7 @@
     else if (route.page === "visitas") content.innerHTML = renderVisits();
     else if (route.page === "voltas") content.innerHTML = renderVoltas();
     else if (route.page === "prospecao") content.innerHTML = renderLeads();
+    else if (route.page === "campanhas") content.innerHTML = renderCampanhas();
     else content.innerHTML = renderDashboard();
 
     bindContentActions();
@@ -2450,6 +2452,103 @@
     });
     return { base: base, list: list };
   }
+  function renderCampanhas() {
+    var allLeads = state.leads || [];
+    // Agrupa todas as campanhas únicas por nome
+    var campMap = {};
+    allLeads.forEach(function(l) {
+      leadCampanhasList(l).forEach(function(c) {
+        var key = c.nome + "|" + c.data;
+        if (!campMap[key]) campMap[key] = { nome: c.nome, data: c.data, leads: [] };
+        campMap[key].leads.push(l);
+      });
+    });
+    var campanhas = Object.values(campMap).sort(function(a,b) { return b.data.localeCompare(a.data); });
+
+    var html = '<div class="page-head"><div><h1>Campanhas</h1><div class="sub">Campanhas enviadas à carteira de prospeção</div></div>' +
+      '<div class="head-actions"><button class="btn btn-primary" id="camp-nova-btn">+ Nova campanha</button></div></div>';
+
+    if (!campanhas.length) {
+      html += '<div class="empty-state"><p>Ainda não há campanhas registadas.</p><p>Clica em <b>+ Nova campanha</b> para registar a primeira.</p></div>';
+    } else {
+      html += '<div class="card-list">' + campanhas.map(function(c) {
+        var rows = c.leads.map(function(l) {
+          return '<tr><td>' + escapeHtml(l.name) + '</td><td class="muted">' + escapeHtml(l.email || '—') + '</td>' +
+            '<td><span class="chip chip-' + (l.estado === 'conversas' ? 'success' : l.estado === 'cliente' ? 'primary' : 'warning') + '">' + escapeHtml((LEAD_STATUS[l.estado] || {label:l.estado}).label || l.estado) + '</span></td></tr>';
+        }).join('');
+        return '<div class="card" style="margin-bottom:16px;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+            '<div><div style="font-size:16px;font-weight:600;">📧 ' + escapeHtml(c.nome) + '</div>' +
+            '<div class="muted" style="font-size:13px;">Enviada em ' + fmtDate(c.data) + ' · ' + c.leads.length + ' empresa' + (c.leads.length !== 1 ? 's' : '') + '</div></div>' +
+            '<button class="btn btn-sm btn-ghost" data-camp-mark="' + escapeHtml(c.nome) + '" data-camp-data="' + escapeHtml(c.data) + '">+ Marcar mais empresas</button>' +
+          '</div>' +
+          '<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Empresa</th><th>Email</th><th>Estado</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+          '</div>';
+      }).join('') + '</div>';
+    }
+
+    setTimeout(function() {
+      var novaBtn = document.getElementById("camp-nova-btn");
+      if (novaBtn) novaBtn.addEventListener("click", function() { openCampanhaDlg(); });
+      document.querySelectorAll("[data-camp-mark]").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          openCampanhaDlg(this.getAttribute("data-camp-mark"), this.getAttribute("data-camp-data"));
+        });
+      });
+    }, 0);
+    return html;
+  }
+
+  function openCampanhaDlg(nomeExist, dataExist) {
+    var allLeads = state.leads || [];
+    document.getElementById("form-dialog-title").textContent = nomeExist ? "Marcar mais empresas — " + nomeExist : "Nova campanha";
+    document.getElementById("form-dialog-body").innerHTML =
+      '<div class="field-row">' +
+        field("Nome da campanha", '<input class="input" id="cdlg-nome" value="' + escapeHtml(nomeExist || "") + '" placeholder="Ex.: Soudaflex 40FC">') +
+        field("Data de envio", '<input class="input" type="date" id="cdlg-data" value="' + escapeHtml(dataExist || todayISO()) + '">') +
+      '</div>' +
+      '<div style="margin:10px 0 4px;font-weight:600;font-size:13px;">Colar lista de emails (separados por ; ou nova linha)</div>' +
+      '<textarea class="input" id="cdlg-emails" rows="6" placeholder="geral@empresa1.pt; geral@empresa2.pt&#10;geral@empresa3.pt" style="font-size:12px;font-family:monospace;"></textarea>' +
+      '<div id="cdlg-preview" style="margin-top:8px;font-size:13px;color:#0d9488;"></div>';
+    document.getElementById("form-dialog-foot").innerHTML =
+      '<button class="btn" data-action="close-dialog">Cancelar</button>' +
+      '<button class="btn btn-primary" id="cdlg-save">Marcar empresas</button>';
+    formDialog.showModal();
+
+    var preview = document.getElementById("cdlg-preview");
+    function parseEmails() {
+      var raw = document.getElementById("cdlg-emails").value;
+      return raw.split(/[;\n,]+/).map(function(e){ return e.trim().toLowerCase(); }).filter(Boolean);
+    }
+    document.getElementById("cdlg-emails").addEventListener("input", function() {
+      var emails = parseEmails();
+      var matched = allLeads.filter(function(l){ return emails.indexOf(String(l.email||"").trim().toLowerCase()) > -1; });
+      preview.textContent = emails.length ? matched.length + " empresa" + (matched.length!==1?"s":"") + " encontradas na carteira de " + emails.length + " emails." : "";
+    });
+    document.getElementById("cdlg-save").addEventListener("click", function() {
+      var nome = (document.getElementById("cdlg-nome").value || "").trim();
+      var data = document.getElementById("cdlg-data").value || todayISO();
+      var emails = new Set(parseEmails());
+      if (!nome) { toast("Indique o nome da campanha.", "error"); return; }
+      if (!emails.size) { toast("Cole pelo menos um email.", "error"); return; }
+      var updated = 0;
+      allLeads.forEach(function(l) {
+        var email = String(l.email || "").trim().toLowerCase();
+        if (!email || !emails.has(email)) return;
+        var camps = leadCampanhasList(l);
+        if (!camps.some(function(x){ return x.nome===nome && x.data===data; })) {
+          camps.push({nome:nome, data:data});
+          l.campanhas = camps;
+          updated++;
+        }
+      });
+      scheduleSave();
+      formDialog.close();
+      render();
+      toast(updated + " empresa" + (updated!==1?"s":"") + " marcadas com \"" + nome + "\".");
+    });
+  }
+
   function renderLeads() {
     var f = F.leads;
     var mercado = f.mercado || "PT";
