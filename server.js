@@ -75,6 +75,16 @@ app.get("/pt_mapa.json", (req, res) => {
   res.sendFile(PT_MAPA_GZ);
 });
 
+// Províncias e municípios de Espanha (INE, via es-atlas, simplificados) para
+// o mapa da prospeção no mercado espanhol (2026-11-08).
+const ES_MAPA_GZ = path.join(__dirname, "es_mapa.json.gz");
+app.get("/es_mapa.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Content-Encoding", "gzip");
+  res.setHeader("Cache-Control", "public, max-age=604800");
+  res.sendFile(ES_MAPA_GZ);
+});
+
 app.get("/healthz", (req, res) => res.status(200).send("ok"));
 
 app.get("/", (req, res) => {
