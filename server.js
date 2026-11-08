@@ -204,7 +204,7 @@ app.post("/api/import-leads", requireAuth, express.json({ limit: "2mb" }), async
     return res.status(400).json({ error: "invalid_body", message: "Enviar leads[]" });
   }
   try {
-    const { rows } = await pool.query("SELECT data, rev FROM app_state WHERE id = 1");
+    const { rows } = await pool.query("SELECT data FROM app_state WHERE id = 1");
     if (!rows.length) return res.status(404).json({ error: "no_state" });
     const state = rows[0].data;
     const existing = Array.isArray(state.leads) ? state.leads : [];
@@ -228,6 +228,7 @@ app.post("/api/import-leads", requireAuth, express.json({ limit: "2mb" }), async
         nif: nif || "",
         name,
         distrito: String(row.distrito || "").trim(),
+        localidade: String(row.localidade || "").trim(),
         email: String(row.email || "").trim(),
         phone: String(row.phone || row.telefone || "").trim(),
         estado: "prospecao",
@@ -235,7 +236,7 @@ app.post("/api/import-leads", requireAuth, express.json({ limit: "2mb" }), async
         whatsapp: false,
         visitas: false,
         emailApresentacao: "",
-        campanhas: "",
+        campanhas: [],
         conversas: "",
         notes: String(row.notes || row.notas || "").trim(),
         clientId: null,

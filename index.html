@@ -2989,6 +2989,7 @@
   }
 
   function triggerXlsxImport() {
+    loadGeo("PT"); loadGeo("ES");
     var inp = document.createElement("input");
     inp.type = "file";
     inp.accept = ".xlsx,.xls,.csv";
@@ -3022,26 +3023,46 @@
               nif: col("nif","contribuinte","vat","nif"),
               email: col("email","emailgeral","mail"),
               phone: col("phone","telefone","tel","telemovel","mobile"),
-              distrito: col("distrito","district","localidade","municipio","concelho"),
+              distrito: col("distrito","district","provincia","província","province"),
+              localidade: col("localidade","concelho","municipio","município","cidade","city","morada","address"),
               mercado: col("mercado","market","pais","country") || "PT",
               notes: col("notes","notas","obs","observacoes","observações")
             };
           }).filter(function (l) { return l.name; });
           if (!leads.length) { toast("Nenhuma empresa encontrada. Verifica se a coluna 'Nome' ou 'Empresa' existe."); return; }
-          toast("A importar " + leads.length + " empresa(s)…");
-          fetch("/api/import-leads", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ leads: leads })
-          }).then(function (r) { return r.json(); }).then(function (data) {
-            if (data.ok) {
-              reloadFromServer("✅ " + data.added + " empresa(s) adicionadas, " + data.skipped + " ignoradas (repetidas). Total: " + data.total + ".");
-            } else {
-              toast("Erro ao importar: " + (data.message || data.error || "?"));
+          // Importa diretamente para os dados da página e grava como qualquer outra
+          // alteração (2026-11-08: o envio direto ao servidor falhava e podia
+          // chocar com alterações por gravar).
+          var normName = function (s) { return String(s || "").trim().toLowerCase().replace(/\s+/g, " "); };
+          var byNif = {}, byName = {};
+          state.leads.forEach(function (x) { if (x.nif) byNif[String(x.nif).replace(/\s/g, "")] = 1; if (x.name) byName[normName(x.name)] = 1; });
+          var added = 0, skipped = 0, now = new Date().toISOString();
+          leads.forEach(function (row) {
+            var nif = String(row.nif || "").replace(/\s/g, "");
+            var nm = normName(row.name);
+            if ((nif && byNif[nif]) || byName[nm]) { skipped++; return; }
+            var mercado = String(row.mercado || "PT").trim().toUpperCase();
+            mercado = /^(ES|ESP|ESPANHA|SPAIN|ESPAÑA)$/.test(mercado) ? "ES" : "PT";
+            // Sem distrito mas com concelho/localidade: deduz o distrito pelo mapa.
+            if (!row.distrito && row.localidade && GEO[mercado]) {
+              var ci = resolveConcelho(mercado, [row.localidade], "");
+              if (ci >= 0) row.distrito = concProps(mercado, ci).d;
             }
-          }).catch(function (err) {
-            toast("Erro de rede ao importar: " + err.message);
+            state.leads.push({
+              id: "lead_" + Math.random().toString(36).slice(2, 12),
+              mercado: mercado, nif: nif, name: String(row.name).trim(),
+              distrito: row.distrito, localidade: row.localidade,
+              email: row.email, phone: row.phone,
+              estado: "prospecao", newsletter: false, whatsapp: false, visitas: false,
+              emailApresentacao: "", campanhas: [], conversas: "",
+              notes: row.notes, clientId: null, createdAt: now, contactos: []
+            });
+            if (nif) byNif[nif] = 1;
+            byName[nm] = 1;
+            added++;
           });
+          if (added) { scheduleSave(); render(); }
+          toast("✅ " + added + " empresa(s) adicionada(s)" + (skipped ? ", " + skipped + " ignorada(s) por já existirem" : "") + ". Total: " + state.leads.length + ".");
         } catch (err) {
           toast("Erro ao ler o ficheiro Excel: " + err.message);
         }
