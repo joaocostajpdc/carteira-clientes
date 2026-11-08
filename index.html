@@ -386,7 +386,8 @@
   .cm-cat.on i { opacity: 1; }
   .cm-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); gap: 12px; align-items: start; }
   @media (max-width: 900px) { .cm-grid { grid-template-columns: 1fr; } }
-  .cm-mappanel { overflow: hidden; }
+  .cm-mappanel { overflow: hidden; position: sticky; top: 12px; }
+  @media (max-width: 900px) { .cm-mappanel { position: static; } }
   .cm-crumb { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 9px 12px; border-bottom: 1px solid var(--sand); font-size: 13.5px; }
   .cm-crumb .sep { color: var(--ink-muted); }
   .cm-cr { border: 0; background: none; font: inherit; color: #1f3fe0; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
@@ -421,7 +422,17 @@
   .cm-clabel .nm { font-size: 10.5px; font-weight: 600; color: #1f2937; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; }
   .cm-clabel.zero .nm { font-weight: 500; color: #6b7280; }
   .cm-clabel.sel .n { background: #111827; }
-  .cm-tip { font-weight: 600; }
+  .cm-tip { font-weight: 600; display: flex; flex-direction: column; gap: 1px; padding: 6px 10px; }
+  .cm-tip-sub { font-weight: 400; font-size: 11.5px; color: #6b7280; }
+  .cm-tip-n { font-weight: 700; font-size: 12px; color: #1f3fe0; }
+  .cm-back { border: 1px solid rgba(0,0,0,.2); background: #fff; color: #111827; font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+  .cm-back:hover { background: #f3f4f6; }
+  .cm-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .cm-chip { border: 1px solid var(--sand); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12.5px; cursor: pointer; }
+  .cm-chip:hover { border-color: #1f3fe0; color: #1f3fe0; }
+  .cm-chip b { color: #1f3fe0; margin-left: 2px; }
+  .cm-map:focus { outline: none; }
+  .cm-map .leaflet-interactive { transition: fill-opacity .2s, fill .2s; }
   .lead-map-panel { overflow: hidden; }
   .lead-map-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--sand); }
   .lead-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-muted); }
@@ -2159,7 +2170,7 @@
        items(): [{kind,id,name,cat,ci,d,fora,sub}], open(item), extraBar(): html, bindExtra(root) } */
   var regionMaps = {};
   function makeRegionMap(cfg) {
-    var st = { sel: { d: "", c: -1 }, pais: "", map: null, conc: null, dist: null, badges: null, items: [] };
+    var st = { sel: { d: "", c: -1 }, pais: "", map: null, conc: null, dist: null, badges: null, items: [], counts: {} };
     function W() { return PAIS_WORDS[st.pais] || PAIS_WORDS.PT; }
     function id(s) { return cfg.key + "-" + s; }
     function shell() {
@@ -2167,9 +2178,30 @@
       return (cfg.bar ? cfg.bar() : "") +
         '<div class="cm-grid">' +
           '<div class="panel cm-mappanel"><div class="cm-crumb" id="' + id("crumb") + '"></div><div id="' + id("map") + '" class="cm-map" aria-label="Mapa por ' + words.distrito.toLowerCase() + " e " + words.conc + '"><div class="empty-state">A carregar o mapa…</div></div>' +
-          '<div class="cm-foot">Clica num <b>' + words.conc + "</b> para ver as empresas de lá, ou no <b>nome " + (cfg.pais() === "ES" ? "da província" : "do distrito") + "</b> para ver " + (cfg.pais() === "ES" ? "a província toda" : "o distrito todo") + ".</div></div>" +
+          '<div class="cm-foot">Clica num <b>' + words.conc + "</b> para ver as empresas de lá, ou no <b>nome " + (cfg.pais() === "ES" ? "da província" : "do distrito") + "</b> para ver " + (cfg.pais() === "ES" ? "a província toda" : "o distrito todo") + ". Clica fora ou carrega em <b>Esc</b> para voltar atrás.</div></div>" +
           '<div class="panel cm-side" id="' + id("side") + '"></div>' +
         "</div>";
+    }
+    function select(sel, how) {
+      st.sel = sel;
+      draw(false);
+      zoomTo(how);
+      var sd = document.getElementById(id("side"));
+      if (sd) sd.scrollTop = 0;
+      if (sd && window.innerWidth <= 900 && how !== "keep") sd.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    function layerBounds(group, test) { var b = null; if (group) group.eachLayer(function (ly) { if (ly.feature && test(ly.feature.properties)) b = b ? b.extend(ly.getBounds()) : L.latLngBounds(ly.getBounds().getSouthWest(), ly.getBounds().getNorthEast()); }); return b; }
+    function zoomTo(how) {
+      if (!st.map || how === "keep") return;
+      var b = null, opts = { padding: [30, 30], duration: 0.6 };
+      if (st.sel.c >= 0) { b = layerBounds(st.conc, function (p) { return p.i === st.sel.c; }); opts.maxZoom = st.pais === "ES" ? 11 : 10.5; opts.padding = [70, 70]; }
+      else if (st.sel.d) b = layerBounds(st.dist, function (p) { return p.d === st.sel.d; });
+      if (b) st.map.flyToBounds(b, opts);
+      else st.map.flyToBounds(PAIS_BOUNDS[st.pais] || PAIS_BOUNDS.PT, { padding: [8, 8], duration: 0.6 });
+    }
+    function up() {
+      if (st.sel.c >= 0) select({ d: st.sel.d, c: -1 });
+      else if (st.sel.d) select({ d: "", c: -1 });
     }
     function distStyle(f) { return { color: "#3b4252", weight: st.sel.d && f.properties.d === st.sel.d ? 2.4 : (st.pais === "ES" ? 1 : 1.3), fill: false, interactive: false }; }
     function concStyle(counts) {
@@ -2200,22 +2232,39 @@
         st.pais = pais;
         el.innerHTML = "";
         st.map = L.map(el, { zoomSnap: 0.25, attributionControl: false, scrollWheelZoom: true, minZoom: 5, preferCanvas: pais === "ES" });
-        st.dist = L.geoJSON(g.distritos, { style: distStyle });
+        st.dist = L.geoJSON(g.distritos, { style: distStyle, interactive: false });
         st.conc = L.geoJSON(g.concelhos, {
           onEachFeature: function (f, layer) {
             layer.on("click", function () {
+              st.lastLayerClick = Date.now();
               var p = f.properties;
-              st.sel = st.sel.c === p.i ? { d: p.d, c: -1 } : { d: p.d, c: p.i };
-              draw(true);
+              select(st.sel.c === p.i ? { d: p.d, c: -1 } : { d: p.d, c: p.i });
             });
-            layer.on("mouseover", function () { layer.setStyle({ weight: 2, color: "#111827" }); if (layer.bringToFront) layer.bringToFront(); if (st.dist) st.dist.bringToFront(); });
+            layer.on("mouseover", function () {
+              layer.setStyle({ weight: 2.5, color: "#111827" });
+              var p = f.properties, n = st.counts[p.i] || 0;
+              layer.setTooltipContent('<b>' + escapeHtml(p.c) + '</b><span class="cm-tip-sub">' + escapeHtml(PAIS_WORDS[st.pais].distritoDe.toLowerCase() + p.d) + '</span><span class="cm-tip-n">' + (n ? n + (n === 1 ? " empresa" : " empresas") : "sem empresas") + "</span>");
+            });
             layer.on("mouseout", function () { if (st.conc) st.conc.resetStyle(layer); });
-            layer.bindTooltip(escapeHtml(f.properties.c), { sticky: true, direction: "top", className: "cm-tip" });
+            layer.bindTooltip(escapeHtml(f.properties.c), { sticky: true, direction: "top", className: "cm-tip", offset: [0, -6] });
           }
         }).addTo(st.map);
         st.dist.addTo(st.map);
         st.badges = L.layerGroup().addTo(st.map);
         st.map.on("zoomend", badges);
+        // Clicar fora (mar ou outro país) ou carregar em Esc volta um nível atrás.
+        st.map.on("click", function () { if (Date.now() - (st.lastLayerClick || 0) > 300) up(); });
+        el.setAttribute("tabindex", "0");
+        el.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.preventDefault(); up(); } });
+        L.control.zoom && st.map.zoomControl && st.map.zoomControl.setPosition("topleft");
+        var Back = L.Control.extend({ options: { position: "topright" }, onAdd: function () {
+          var b = L.DomUtil.create("button", "cm-back");
+          b.type = "button"; b.id = id("back"); b.innerHTML = "← Voltar"; b.style.display = "none";
+          L.DomEvent.disableClickPropagation(b);
+          L.DomEvent.on(b, "click", function () { up(); });
+          return b;
+        } });
+        st.map.addControl(new Back());
         draw(true);
       });
     }
@@ -2226,6 +2275,9 @@
       if (cfg.counts) cfg.counts(items);
       var counts = {};
       items.forEach(function (it) { if (it.ci >= 0) counts[it.ci] = (counts[it.ci] || 0) + 1; });
+      st.counts = counts;
+      var bk = document.getElementById(id("back"));
+      if (bk) { bk.style.display = st.sel.d ? "" : "none"; bk.textContent = st.sel.c >= 0 ? "← Voltar ao " + (st.pais === "ES" ? "província" : "distrito") : "← Voltar a " + PAIS_WORDS[st.pais].pais; if (st.sel.c >= 0 && st.pais === "ES") bk.textContent = "← Voltar à província"; }
       if (st.map && st.conc) {
         st.conc.setStyle(concStyle(counts));
         st.conc.eachLayer(function (ly) { if (ly.feature && ly.feature.properties.i === st.sel.c && ly.bringToFront) ly.bringToFront(); });
@@ -2233,8 +2285,9 @@
         st.dist.bringToFront();
         if (fit) {
           var b = null;
-          if (st.sel.d) st.dist.eachLayer(function (ly) { if (ly.feature.properties.d === st.sel.d) b = ly.getBounds(); });
-          if (b) st.map.fitBounds(b, { padding: [24, 24] });
+          if (st.sel.c >= 0) b = layerBounds(st.conc, function (p) { return p.i === st.sel.c; });
+          else if (st.sel.d) b = layerBounds(st.dist, function (p) { return p.d === st.sel.d; });
+          if (b) st.map.fitBounds(b, { padding: st.sel.c >= 0 ? [70, 70] : [24, 24], maxZoom: 11 });
           else st.map.fitBounds(PAIS_BOUNDS[st.pais] || PAIS_BOUNDS.PT, { padding: [8, 8] });
         }
         badges();
@@ -2256,7 +2309,7 @@
           var p = f.properties, n = byD[p.d] || 0;
           if (es && !n && z < 6.5) return;
           var m = L.marker(p.p, { icon: L.divIcon({ className: "cm-dlabel" + (es ? " small" : ""), html: '<span class="nm">' + escapeHtml(p.d) + "</span>" + (n ? '<span class="n">' + n + "</span>" : ""), iconSize: null }), keyboard: true, title: "Ver " + W().distritoDe.toLowerCase() + p.d });
-          m.on("click", function () { st.sel = { d: p.d, c: -1 }; draw(true); });
+          m.on("click", function () { st.lastLayerClick = Date.now(); select({ d: p.d, c: -1 }); });
           m.addTo(st.badges);
         });
         return;
@@ -2269,7 +2322,7 @@
         if (st.sel.d && p.d !== st.sel.d) return;
         if (!n && !(st.sel.d && z >= namesZoom && !(es && z < 10))) return;
         var m = L.marker(p.p, { icon: L.divIcon({ className: "cm-clabel" + (n ? "" : " zero") + (st.sel.c === p.i ? " sel" : ""), html: (z >= namesZoom || n ? '<span class="nm">' + escapeHtml(p.c) + "</span>" : "") + (n ? '<span class="n">' + n + "</span>" : ""), iconSize: null }), title: p.c });
-        m.on("click", function () { st.sel = st.sel.c === p.i ? { d: p.d, c: -1 } : { d: p.d, c: p.i }; draw(st.sel.c < 0); });
+        m.on("click", function () { st.lastLayerClick = Date.now(); select(st.sel.c === p.i ? { d: p.d, c: -1 } : { d: p.d, c: p.i }); });
         m.addTo(st.badges);
       });
       if (st.sel.d) {
@@ -2280,7 +2333,7 @@
           if (p.d === st.sel.d) return;
           if (es && !byD2[p.d]) return;
           var m = L.marker(p.p, { icon: L.divIcon({ className: "cm-dlabel small", html: '<span class="nm">' + escapeHtml(p.d) + "</span>", iconSize: null }), title: "Ver " + W().distritoDe.toLowerCase() + p.d });
-          m.on("click", function () { st.sel = { d: p.d, c: -1 }; draw(true); });
+          m.on("click", function () { st.lastLayerClick = Date.now(); select({ d: p.d, c: -1 }); });
           m.addTo(st.badges);
         });
       }
@@ -2295,9 +2348,16 @@
       el.innerHTML = h;
       el.querySelectorAll("[data-cm-go]").forEach(function (b) {
         b.addEventListener("click", function () {
-          st.sel = b.getAttribute("data-cm-go") === "pt" ? { d: "", c: -1 } : { d: st.sel.d, c: -1 };
-          draw(true);
+          select(b.getAttribute("data-cm-go") === "pt" ? { d: "", c: -1 } : { d: st.sel.d, c: -1 });
         });
+      });
+    }
+    function hl(i, on) {
+      if (!st.conc) return;
+      st.conc.eachLayer(function (ly) {
+        if (ly.feature.properties.i !== i) return;
+        if (on) ly.setStyle({ weight: 3, color: "#1f3fe0" });
+        else st.conc.resetStyle(ly);
       });
     }
     function catMeta(k) { return cfg.cats.find(function (c) { return c.k === k; }) || cfg.cats[0]; }
@@ -2310,7 +2370,7 @@
     function summary(list) {
       var by = countBy(list, function (it) { return it.cat; });
       return cfg.cats.filter(function (c) { return by[c.k]; }).map(function (c) {
-        return '<span class="cm-sum"><i style="background:' + c.color + '"></i>' + by[c.k] + " " + escapeHtml(c.label.toLowerCase()) + "</span>";
+        return '<span class="cm-sum"><i style="background:' + c.color + '"></i>' + by[c.k] + " " + escapeHtml((by[c.k] === 1 && c.sg ? c.sg : c.label).toLowerCase()) + "</span>";
       }).join("");
     }
     function side(items) {
@@ -2328,6 +2388,10 @@
       } else if (st.sel.d) {
         var dl = items.filter(function (it) { return it.d === st.sel.d; });
         h += '<div class="cm-side-h"><h2>' + escapeHtml(w.distritoDe + st.sel.d) + '</h2><div class="sub">' + emp(dl.length) + "</div>" + summary(dl) + "</div>";
+        var cc = {};
+        dl.forEach(function (it) { if (it.ci >= 0) cc[it.ci] = (cc[it.ci] || 0) + 1; });
+        var ccKeys = Object.keys(cc).sort(function (a, b) { return cc[b] - cc[a] || concProps(st.pais, +a).c.localeCompare(concProps(st.pais, +b).c, "pt"); });
+        if (ccKeys.length > 1) h += '<div class="cm-chips">' + ccKeys.map(function (k) { return '<button type="button" class="cm-chip" data-cm-conc="' + k + '">' + escapeHtml(concProps(st.pais, +k).c) + " <b>" + cc[k] + "</b></button>"; }).join("") + "</div>";
         var groups = {};
         dl.forEach(function (it) { var k = it.ci >= 0 ? String(it.ci) : ""; (groups[k] = groups[k] || []).push(it); });
         var keys = Object.keys(groups).filter(Boolean).sort(function (a, b) { return groups[b].length - groups[a].length || concProps(st.pais, +a).c.localeCompare(concProps(st.pais, +b).c, "pt"); });
@@ -2353,6 +2417,11 @@
         if (fora.length) h += '<div class="cm-grp"><div class="cm-grp-h"><span class="muted">Fora de ' + w.pais + ' / sem zona</span> <span class="fcount">' + fora.length + "</span></div>" + fora.sort(byName).map(row).join("") + "</div>";
       }
       el.innerHTML = h;
+      // Passar o rato por um concelho na lista destaca-o no mapa.
+      el.querySelectorAll("[data-cm-conc]").forEach(function (b) {
+        b.addEventListener("mouseenter", function () { hl(+b.getAttribute("data-cm-conc"), true); });
+        b.addEventListener("mouseleave", function () { hl(+b.getAttribute("data-cm-conc"), false); });
+      });
       el.querySelectorAll("[data-cm-open]").forEach(function (b) {
         b.addEventListener("click", function () {
           var v = b.getAttribute("data-cm-open"), kind = v.slice(0, v.indexOf(":")), iid = v.slice(v.indexOf(":") + 1);
@@ -2360,10 +2429,10 @@
         });
       });
       el.querySelectorAll("[data-cm-dist]").forEach(function (b) {
-        b.addEventListener("click", function () { st.sel = { d: b.getAttribute("data-cm-dist"), c: -1 }; draw(true); });
+        b.addEventListener("click", function () { select({ d: b.getAttribute("data-cm-dist"), c: -1 }); });
       });
       el.querySelectorAll("[data-cm-conc]").forEach(function (b) {
-        b.addEventListener("click", function () { var i = parseInt(b.getAttribute("data-cm-conc"), 10); var cp = concProps(st.pais, i); if (cp) { st.sel = { d: cp.d, c: i }; draw(false); } });
+        b.addEventListener("click", function () { var i = parseInt(b.getAttribute("data-cm-conc"), 10); var cp = concProps(st.pais, i); if (cp) select({ d: cp.d, c: i }); });
       });
     }
     function mount(root) {
@@ -2378,11 +2447,11 @@
 
   /* ---- Clientes ---- */
   var CLI_MAP_CATS = [
-    { k: "ativo", label: "Clientes ativos", one: "Cliente ativo", color: "#16a34a", def: true },
-    { k: "cli_prospecao", label: "Clientes em prospeção", one: "Cliente em prospeção", color: "#d97706", def: true },
-    { k: "inativo", label: "Clientes inativos", one: "Cliente inativo", color: "#98a2b3", def: false },
-    { k: "conversas", label: "Empresas em conversas", one: "Prospeção · em conversas", color: "#0d9488", def: true },
-    { k: "lead_prospecao", label: "Empresas a prospetar", one: "Prospeção · a prospetar", color: "#8b5cf6", def: false }
+    { k: "ativo", label: "Clientes ativos", sg: "cliente ativo", one: "Cliente ativo", color: "#16a34a", def: true },
+    { k: "cli_prospecao", label: "Clientes em prospeção", sg: "cliente em prospeção", one: "Cliente em prospeção", color: "#d97706", def: true },
+    { k: "inativo", label: "Clientes inativos", sg: "cliente inativo", one: "Cliente inativo", color: "#98a2b3", def: false },
+    { k: "conversas", label: "Empresas em conversas", sg: "empresa em conversas", one: "Prospeção · em conversas", color: "#0d9488", def: true },
+    { k: "lead_prospecao", label: "Empresas a prospetar", sg: "empresa a prospetar", one: "Prospeção · a prospetar", color: "#8b5cf6", def: false }
   ];
   var cliMapCats = (function () {
     var d = {}; CLI_MAP_CATS.forEach(function (c) { d[c.k] = c.def; });
@@ -2464,7 +2533,7 @@
       { k: "cliente", label: "Já é cliente", one: "Já é cliente", color: "#16a34a" },
       { k: "sem_interesse", label: "Sem interesse", one: "Sem interesse", color: "#98a2b3" },
       { k: "concorrente", label: "Concorrente", one: "Concorrente", color: "#dc2626" },
-      { k: "carteira", label: "Clientes da carteira", one: "Cliente da carteira", color: "#1f3fe0" }
+      { k: "carteira", label: "Clientes da carteira", sg: "cliente da carteira", one: "Cliente da carteira", color: "#1f3fe0" }
     ],
     bar: function () {
       var es = (F.leads && F.leads.mercado) === "ES";
