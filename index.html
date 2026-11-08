@@ -398,6 +398,7 @@
   .cm-grid > .panel + .panel { margin-top: 0; }
   .cm-side { padding: 0; max-height: calc(100vh - 210px); min-height: 520px; overflow: auto; }
   .cm-side-h { padding: 14px 16px 10px; border-bottom: 1px solid var(--sand); position: sticky; top: 0; background: var(--surface); z-index: 1; }
+  .cm-exp { float: right; margin: 0 0 6px 8px; }
   .cm-side-h h2 { margin: 0 0 2px; font-size: 18px; }
   .cm-side-h .sub { font-size: 13px; color: var(--ink-muted); margin-bottom: 6px; }
   .cm-sum { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; margin: 2px 10px 0 0; color: var(--ink-muted); }
@@ -2352,6 +2353,27 @@
         });
       });
     }
+    // Exporta para Excel as empresas da seleção atual (2026-11-08).
+    function exportItems(list, title) {
+      var w = W();
+      var rows = [["Empresa", "Tipo", "Estado", w.concelho, w.distrito, "Localidade / zona", "NIF", "Telefone", "Email", "Morada", "Volta", "Observações"]];
+      list.slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name), "pt"); }).forEach(function (it) {
+        var cp = concProps(st.pais, it.ci), m = catMeta(it.cat);
+        if (it.kind === "cli") {
+          var c = clientById(it.id) || {};
+          rows.push([c.name || it.name, "Cliente", (CLIENT_STATUS && CLIENT_STATUS[c.status || "ativo"] && CLIENT_STATUS[c.status || "ativo"].label) || m.one, cp ? cp.c : "", it.d || "",
+            [c.city, c.zona].filter(Boolean).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(" · "), c.nif || "", c.phone || "", c.email || "",
+            [c.address, c.postalCode].filter(Boolean).join(", "), c.volta || "", c.notes || ""]);
+        } else {
+          var l = leadById(it.id) || {};
+          rows.push([l.name || it.name, "Prospeção", (LEAD_STATUS[l.estado || "prospecao"] && LEAD_STATUS[l.estado || "prospecao"].label) || m.one, cp ? cp.c : "", it.d || l.distrito || "",
+            l.localidade || guessLocalidade(l) || "", l.nif || "", l.phone || "", l.email || "", "", "", l.notes || ""]);
+        }
+      });
+      var slug = normPlace(title || w.pais).replace(/ /g, "-") || "mapa";
+      downloadXlsx("empresas-" + slug + "-" + todayISO() + ".xlsx", String(title || w.pais).replace(/[:\\\/?*\[\]]/g, " ").slice(0, 31), rows);
+      toast("⬇ " + list.length + (list.length === 1 ? " empresa exportada" : " empresas exportadas") + " para Excel.");
+    }
     function hl(i, on) {
       if (!st.conc) return;
       st.conc.eachLayer(function (ly) {
@@ -2381,13 +2403,17 @@
       var h = "";
       var p = concProps(st.pais, st.sel.c);
       var emp = function (n) { return "<b>" + n + "</b> " + (n === 1 ? "empresa" : "empresas"); };
+      var expBtn = function (n) { return n ? '<button type="button" class="btn btn-sm cm-exp" data-cm-export title="Exportar para Excel as empresas desta seleção">⬇ Exportar Excel (' + n + ")</button>" : ""; };
+      var cur = [], curTitle = w.pais;
       if (p) {
         var list = items.filter(function (it) { return it.ci === p.i; }).sort(byName);
-        h += '<div class="cm-side-h"><h2>' + escapeHtml(p.c) + '</h2><div class="sub">' + w.concelho + " · " + escapeHtml(w.distritoDe.toLowerCase() + p.d) + " · " + emp(list.length) + "</div>" + summary(list) + "</div>";
+        cur = list; curTitle = p.c;
+        h += '<div class="cm-side-h">' + expBtn(list.length) + '<h2>' + escapeHtml(p.c) + '</h2><div class="sub">' + w.concelho + " · " + escapeHtml(w.distritoDe.toLowerCase() + p.d) + " · " + emp(list.length) + "</div>" + summary(list) + "</div>";
         h += list.length ? '<div class="cm-list">' + list.map(row).join("") + "</div>" : '<div class="empty-state">Nenhuma empresa neste ' + w.conc + " com os filtros escolhidos.</div>";
       } else if (st.sel.d) {
         var dl = items.filter(function (it) { return it.d === st.sel.d; });
-        h += '<div class="cm-side-h"><h2>' + escapeHtml(w.distritoDe + st.sel.d) + '</h2><div class="sub">' + emp(dl.length) + "</div>" + summary(dl) + "</div>";
+        cur = dl; curTitle = w.distritoDe + st.sel.d;
+        h += '<div class="cm-side-h">' + expBtn(dl.length) + '<h2>' + escapeHtml(w.distritoDe + st.sel.d) + '</h2><div class="sub">' + emp(dl.length) + "</div>" + summary(dl) + "</div>";
         var cc = {};
         dl.forEach(function (it) { if (it.ci >= 0) cc[it.ci] = (cc[it.ci] || 0) + 1; });
         var ccKeys = Object.keys(cc).sort(function (a, b) { return cc[b] - cc[a] || concProps(st.pais, +a).c.localeCompare(concProps(st.pais, +b).c, "pt"); });
@@ -2405,7 +2431,8 @@
         var byD = {};
         items.forEach(function (it) { if (it.d) byD[it.d] = (byD[it.d] || 0) + 1; });
         var ds = Object.keys(byD).sort(function (a, b) { return byD[b] - byD[a] || a.localeCompare(b, "pt"); });
-        h += '<div class="cm-side-h"><h2>' + w.pais + '</h2><div class="sub">' + emp(items.length) + " no total</div>" + summary(items) + "</div>";
+        cur = items;
+        h += '<div class="cm-side-h">' + expBtn(items.length) + '<h2>' + w.pais + '</h2><div class="sub">' + emp(items.length) + " no total</div>" + summary(items) + "</div>";
         h += '<div class="cm-grp"><div class="cm-grp-h">Por ' + w.distrito.toLowerCase() + "</div>" + (ds.length ? ds.map(function (d) {
           return '<button type="button" class="cm-row cm-drow" data-cm-dist="' + escapeHtml(d) + '"><i style="background:' + distColor(d) + '"></i><span class="cm-row-t"><span class="cm-row-n">' + escapeHtml(d) + '</span></span><span class="fcount">' + byD[d] + "</span></button>";
         }).join("") : '<div class="muted" style="padding:8px 2px">Nenhuma empresa com os filtros escolhidos.</div>') + "</div>";
@@ -2417,6 +2444,8 @@
         if (fora.length) h += '<div class="cm-grp"><div class="cm-grp-h"><span class="muted">Fora de ' + w.pais + ' / sem zona</span> <span class="fcount">' + fora.length + "</span></div>" + fora.sort(byName).map(row).join("") + "</div>";
       }
       el.innerHTML = h;
+      var eb = el.querySelector("[data-cm-export]");
+      if (eb) eb.addEventListener("click", function () { exportItems(cur, curTitle); });
       // Passar o rato por um concelho na lista destaca-o no mapa.
       el.querySelectorAll("[data-cm-conc]").forEach(function (b) {
         b.addEventListener("mouseenter", function () { hl(+b.getAttribute("data-cm-conc"), true); });
