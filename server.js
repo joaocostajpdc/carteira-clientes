@@ -197,6 +197,65 @@ app.post("/api/migrate-campanhas", express.json({ limit: "512kb" }), async (req,
   }
 });
 
+// Importação de leads a partir de Excel (SheetJS processa no browser, envia JSON aqui)
+app.post("/api/import-leads", requireAuth, express.json({ limit: "2mb" }), async (req, res) => {
+  const { leads: incoming } = req.body || {};
+  if (!Array.isArray(incoming) || !incoming.length) {
+    return res.status(400).json({ error: "invalid_body", message: "Enviar leads[]" });
+  }
+  try {
+    const { rows } = await pool.query("SELECT data, rev FROM app_state WHERE id = 1");
+    if (!rows.length) return res.status(404).json({ error: "no_state" });
+    const state = rows[0].data;
+    const existing = Array.isArray(state.leads) ? state.leads : [];
+
+    // Índice de duplicados por NIF e por nome normalizado
+    const byNif = new Set(existing.map(l => String(l.nif || "").trim()).filter(Boolean));
+    const byName = new Set(existing.map(l => String(l.name || "").trim().toLowerCase()).filter(Boolean));
+
+    let added = 0, skipped = 0;
+    const now = new Date().toISOString();
+    for (const row of incoming) {
+      const nif = String(row.nif || "").trim();
+      const name = String(row.name || "").trim();
+      if (!name) { skipped++; continue; }
+      if (nif && byNif.has(nif)) { skipped++; continue; }
+      if (byName.has(name.toLowerCase())) { skipped++; continue; }
+      const id = "lead_" + Math.random().toString(36).slice(2, 12);
+      const lead = {
+        id,
+        mercado: String(row.mercado || "PT").toUpperCase().slice(0, 2),
+        nif: nif || "",
+        name,
+        distrito: String(row.distrito || "").trim(),
+        email: String(row.email || "").trim(),
+        phone: String(row.phone || row.telefone || "").trim(),
+        estado: "prospecao",
+        newsletter: false,
+        whatsapp: false,
+        visitas: false,
+        emailApresentacao: "",
+        campanhas: "",
+        conversas: "",
+        notes: String(row.notes || row.notas || "").trim(),
+        clientId: null,
+        createdAt: now,
+        contactos: []
+      };
+      existing.push(lead);
+      byNif.add(nif);
+      byName.add(name.toLowerCase());
+      added++;
+    }
+    state.leads = existing;
+    await pool.query("UPDATE app_state SET data = $1, updated_at = now() WHERE id = 1", [JSON.stringify(state)]);
+    res.json({ ok: true, added, skipped, total: existing.length });
+  } catch (err) {
+    console.error("import-leads failed", err);
+    res.status(500).json({ error: "server_error" });
+  }
+});
+
 app.post("/api/client-log", express.json({ limit: "20kb" }), (req, res) => {
   const b = req.body || {};
   const msg = String(b.msg || "").slice(0, 2000);

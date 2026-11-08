@@ -2780,7 +2780,7 @@
 
     return (
       '<div class="page-head"><div><h1>Prospeção de mercado</h1><div class="sub">Empresas a conquistar — regista cada contacto e passa-as a cliente quando fecharem negócio</div></div>' +
-      '<div class="head-actions"><button class="btn btn-primary" data-lead-new>+ Nova empresa</button></div></div>' +
+      '<div class="head-actions"><button class="btn btn-sm btn-ghost" id="btn-import-xlsx" title="Importar empresas de um ficheiro Excel">📥 Importar Excel</button><button class="btn btn-primary" data-lead-new>+ Nova empresa</button></div></div>' +
       '<div class="lead-mercado" role="tablist" aria-label="Mercado">' + Object.keys(LEAD_MERCADOS).map(function (m) {
         var n = state.leads.filter(function (l) { return (l.mercado || "PT") === m; }).length;
         return '<button type="button" role="tab" class="lead-merc' + (mercado === m ? " on" : "") + '" aria-selected="' + (mercado === m ? "true" : "false") + '" data-lead-mercado="' + m + '">' +
@@ -2986,6 +2986,69 @@
       else leadMap.setView(F.leads.mercado === "ES" ? [40.2, -3.7] : [39.6, -8.1], 6);
     }
     updateLeadMapFoot();
+  }
+
+  function triggerXlsxImport() {
+    var inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = ".xlsx,.xls,.csv";
+    inp.style.display = "none";
+    document.body.appendChild(inp);
+    inp.addEventListener("change", function () {
+      var file = inp.files[0];
+      if (!file) { document.body.removeChild(inp); return; }
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        document.body.removeChild(inp);
+        try {
+          var wb = XLSX.read(e.target.result, { type: "array" });
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          var rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+          if (!rows.length) { toast("O ficheiro está vazio ou não tem dados na primeira folha."); return; }
+          // Mapeamento flexível de colunas
+          var leads = rows.map(function (row) {
+            var keys = Object.keys(row);
+            function col() {
+              for (var i = 0; i < arguments.length; i++) {
+                var k = arguments[i];
+                for (var j = 0; j < keys.length; j++) {
+                  if (keys[j].toLowerCase().replace(/[^a-z0-9]/g, "") === k.toLowerCase().replace(/[^a-z0-9]/g, "")) return String(row[keys[j]] || "").trim();
+                }
+              }
+              return "";
+            }
+            return {
+              name: col("name","nome","empresa","razaosocial","company"),
+              nif: col("nif","contribuinte","vat","nif"),
+              email: col("email","emailgeral","mail"),
+              phone: col("phone","telefone","tel","telemovel","mobile"),
+              distrito: col("distrito","district","localidade","municipio","concelho"),
+              mercado: col("mercado","market","pais","country") || "PT",
+              notes: col("notes","notas","obs","observacoes","observações")
+            };
+          }).filter(function (l) { return l.name; });
+          if (!leads.length) { toast("Nenhuma empresa encontrada. Verifica se a coluna 'Nome' ou 'Empresa' existe."); return; }
+          toast("A importar " + leads.length + " empresa(s)…");
+          fetch("/api/import-leads", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ leads: leads })
+          }).then(function (r) { return r.json(); }).then(function (data) {
+            if (data.ok) {
+              reloadFromServer("✅ " + data.added + " empresa(s) adicionadas, " + data.skipped + " ignoradas (repetidas). Total: " + data.total + ".");
+            } else {
+              toast("Erro ao importar: " + (data.message || data.error || "?"));
+            }
+          }).catch(function (err) {
+            toast("Erro de rede ao importar: " + err.message);
+          });
+        } catch (err) {
+          toast("Erro ao ler o ficheiro Excel: " + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+    inp.click();
   }
 
   function openLeadForm(id) {
@@ -4322,6 +4385,10 @@
     content.querySelectorAll("[data-lead-new]").forEach(function (el) {
       el.addEventListener("click", function () { openLeadForm(null); });
     });
+    var btnImportXlsx = content.querySelector("#btn-import-xlsx");
+    if (btnImportXlsx) {
+      btnImportXlsx.addEventListener("click", function () { triggerXlsxImport(); });
+    }
     content.querySelectorAll("[data-lead-open]").forEach(function (el) {
       el.addEventListener("click", function () { openLeadForm(el.getAttribute("data-lead-open")); });
     });
